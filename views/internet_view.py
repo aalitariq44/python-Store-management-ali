@@ -350,7 +350,7 @@ class InternetView(QMainWindow):
             status_item = QTableWidgetItem(status_text)
             status_item.setTextAlignment(Qt.AlignCenter)
             status_item.setBackground(status_color)
-            status_item.setForeground(Qt.white)
+            status_item.setForeground(Qt.black)
             self.table.setItem(row, 6, status_item)
             
             # الأيام المتبقية
@@ -364,13 +364,13 @@ class InternetView(QMainWindow):
             # تلوين الأيام المتبقية
             if days_remaining < 0:
                 days_item.setBackground(Qt.red)
-                days_item.setForeground(Qt.white)
+                days_item.setForeground(Qt.black)
             elif days_remaining <= 7:
                 days_item.setBackground(Qt.yellow)
                 days_item.setForeground(Qt.black)
             else:
                 days_item.setBackground(Qt.green)
-                days_item.setForeground(Qt.white)
+                days_item.setForeground(Qt.black)
 
             self.table.setItem(row, 7, days_item)
             
