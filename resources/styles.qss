@@ -1,0 +1,263 @@
+/* تنسيقات CSS للواجهة */
+
+/* الألوان الرئيسية */
+:root {
+    --primary-color: #007bff;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #17a2b8;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
+}
+
+/* النافذة الرئيسية */
+QMainWindow {
+    background-color: #f5f5f5;
+    font-family: "Arial", "Tahoma", sans-serif;
+}
+
+/* الأزرار الرئيسية */
+QPushButton.main-button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 20px;
+    font-size: 16px;
+    font-weight: bold;
+    min-height: 100px;
+}
+
+QPushButton.main-button:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+}
+
+QPushButton.main-button:pressed {
+    background-color: #004085;
+}
+
+/* الجداول */
+QTableWidget {
+    background-color: white;
+    gridline-color: #dee2e6;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    selection-background-color: var(--primary-color);
+    alternate-background-color: #f8f9fa;
+}
+
+QTableWidget::item {
+    padding: 8px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+QTableWidget::item:selected {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+QHeaderView::section {
+    background-color: #e9ecef;
+    border: 1px solid #dee2e6;
+    padding: 8px;
+    font-weight: bold;
+}
+
+/* حقول الإدخال */
+QLineEdit, QTextEdit, QSpinBox, QDoubleSpinBox, QDateEdit, QComboBox {
+    border: 2px solid #ced4da;
+    border-radius: 5px;
+    padding: 8px 12px;
+    font-size: 12px;
+    background-color: white;
+}
+
+QLineEdit:focus, QTextEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus, QDateEdit:focus, QComboBox:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+/* الأزرار العادية */
+QPushButton {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 16px;
+    font-weight: bold;
+    min-height: 30px;
+}
+
+QPushButton:hover {
+    background-color: #0056b3;
+}
+
+QPushButton:pressed {
+    background-color: #004085;
+}
+
+QPushButton:disabled {
+    background-color: var(--secondary-color);
+    color: #adb5bd;
+}
+
+/* أزرار الحذف */
+QPushButton.delete-button {
+    background-color: var(--danger-color);
+}
+
+QPushButton.delete-button:hover {
+    background-color: #c82333;
+}
+
+/* أزرار التعديل */
+QPushButton.edit-button {
+    background-color: var(--success-color);
+}
+
+QPushButton.edit-button:hover {
+    background-color: #218838;
+}
+
+/* الإطارات */
+QFrame {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    background-color: white;
+}
+
+QFrame.title-frame {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: bold;
+    padding: 15px;
+}
+
+QFrame.info-frame {
+    background-color: var(--light-color);
+    border: 1px solid #dee2e6;
+}
+
+/* التبويبات */
+QTabWidget::pane {
+    border: 1px solid #dee2e6;
+    background-color: white;
+}
+
+QTabBar::tab {
+    background-color: #e9ecef;
+    border: 1px solid #dee2e6;
+    padding: 8px 16px;
+    margin-right: 2px;
+}
+
+QTabBar::tab:selected {
+    background-color: white;
+    border-bottom-color: white;
+}
+
+QTabBar::tab:hover {
+    background-color: #f8f9fa;
+}
+
+/* صندوق الاختيار */
+QCheckBox {
+    font-weight: bold;
+}
+
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #ced4da;
+    border-radius: 3px;
+    background-color: white;
+}
+
+QCheckBox::indicator:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* التسميات */
+QLabel {
+    color: #495057;
+}
+
+QLabel.title {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--dark-color);
+}
+
+QLabel.subtitle {
+    font-size: 14px;
+    color: var(--secondary-color);
+}
+
+QLabel.error {
+    color: var(--danger-color);
+    font-style: italic;
+}
+
+QLabel.success {
+    color: var(--success-color);
+    font-weight: bold;
+}
+
+/* القوائم المنسدلة */
+QComboBox::drop-down {
+    border: none;
+    width: 20px;
+}
+
+QComboBox::down-arrow {
+    width: 12px;
+    height: 12px;
+}
+
+/* أشرطة التمرير */
+QScrollBar:vertical {
+    background-color: #f8f9fa;
+    width: 12px;
+    border-radius: 6px;
+}
+
+QScrollBar::handle:vertical {
+    background-color: #ced4da;
+    border-radius: 6px;
+    min-height: 20px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background-color: #adb5bd;
+}
+
+/* رسائل الحالة */
+QStatusBar {
+    background-color: var(--light-color);
+    border-top: 1px solid #dee2e6;
+    color: var(--dark-color);
+}
+
+/* التحديدات */
+::selection {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* التأثيرات الانتقالية */
+QPushButton, QLineEdit, QTextEdit, QComboBox {
+    transition: all 0.3s ease;
+}
+
+/* الظلال */
+QFrame, QTableWidget, QPushButton {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+QFrame:hover, QTableWidget:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
