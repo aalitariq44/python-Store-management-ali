@@ -124,6 +124,17 @@ class DatabaseConnection:
             )
         """)
         
+        # جدول إعدادات التسجيل
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS auth_settings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                password TEXT NOT NULL,
+                is_first_time BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
         conn.commit()
         self._migrate_schema(conn)
 

@@ -55,7 +55,7 @@ def main():
     
     try:
         # استيراد وتشغيل التطبيق
-        from views.main_window import main as run_app
+        from main import main as run_app
         run_app()
     except Exception as e:
         print(f"\n❌ خطأ في تشغيل التطبيق: {str(e)}")

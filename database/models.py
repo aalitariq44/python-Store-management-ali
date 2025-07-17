@@ -112,3 +112,18 @@ class Payment:
     amount: float = 0.0
     payment_date: Optional[date] = None
     created_at: Optional[datetime] = None
+
+
+@dataclass
+class AuthSettings:
+    """
+    نموذج إعدادات التسجيل
+    """
+    id: Optional[int] = None
+    password: str = ""
+    is_first_time: bool = True
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    
+    def __str__(self):
+        return "إعدادات كلمة المرور"

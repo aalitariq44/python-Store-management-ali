@@ -19,8 +19,18 @@ class MainWindow(QMainWindow):
     
     def __init__(self):
         super().__init__()
+        self.auth_controller = None
         self.init_ui()
         self.setup_menu()
+    
+    def set_auth_controller(self, auth_controller):
+        """
+        تعيين كنترولر التسجيل
+        
+        Args:
+            auth_controller: كنترولر التسجيل
+        """
+        self.auth_controller = auth_controller
     
     def init_ui(self):
         """
@@ -82,6 +92,13 @@ class MainWindow(QMainWindow):
         internet_action = QAction('عرض اشتراكات الإنترنت', self)
         internet_action.triggered.connect(self.open_internet_view)
         view_menu.addAction(internet_action)
+        
+        # قائمة الإعدادات
+        settings_menu = menubar.addMenu('إعدادات')
+        
+        password_settings_action = QAction('إعدادات كلمة المرور', self)
+        password_settings_action.triggered.connect(self.open_password_settings)
+        settings_menu.addAction(password_settings_action)
         
         # قائمة المساعدة
         help_menu = menubar.addMenu('مساعدة')
@@ -359,6 +376,21 @@ class MainWindow(QMainWindow):
         تم تطويره باستخدام Python و PyQt5
         """
         MessageHelper.show_info(self, "حول البرنامج", about_text)
+    
+    def open_password_settings(self):
+        """
+        فتح نافذة إعدادات كلمة المرور
+        """
+        if not self.auth_controller:
+            MessageHelper.show_error(self, "خطأ", "لم يتم تهيئة نظام التسجيل")
+            return
+        
+        try:
+            from auth.views.password_settings_dialog import PasswordSettingsDialog
+            dialog = PasswordSettingsDialog(self.auth_controller, self)
+            dialog.exec_()
+        except Exception as e:
+            MessageHelper.show_error(self, "خطأ", f"خطأ في فتح إعدادات كلمة المرور: {str(e)}")
     
     def closeEvent(self, event):
         """
