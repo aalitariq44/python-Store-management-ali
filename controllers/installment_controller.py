@@ -20,20 +20,17 @@ class InstallmentController:
         self.db = DatabaseConnection()
         self.queries = InstallmentQueries(self.db)
     
-    def add_installment(self, person_id: int, total_amount: float, installment_amount: float,
-                       frequency: str, description: str, start_date: Optional[date] = None,
-                       end_date: Optional[date] = None) -> tuple[bool, str, Optional[int]]:
+    def add_installment(self, person_id: int, total_amount: float,
+                       frequency: str, description: str, start_date: Optional[date] = None) -> tuple[bool, str, Optional[int]]:
         """
         إضافة قسط جديد
         
         Args:
             person_id: معرف الزبون
             total_amount: المبلغ الإجمالي
-            installment_amount: مبلغ القسط
             frequency: دورية القسط (monthly, weekly, yearly)
             description: وصف القسط
             start_date: تاريخ البداية
-            end_date: تاريخ النهاية
             
         Returns:
             tuple: (نجح, رسالة, معرف القسط الجديد)
@@ -42,8 +39,8 @@ class InstallmentController:
         from utils.validators import InstallmentValidator
         validator = InstallmentValidator()
         is_valid, error_message = validator.validate_installment_data(
-            person_id, total_amount, installment_amount, frequency, description,
-            start_date, end_date
+            person_id, total_amount, 0, frequency, description,
+            start_date, None
         )
         if not is_valid:
             return False, error_message, None
@@ -53,11 +50,11 @@ class InstallmentController:
             person_id=person_id,
             total_amount=total_amount,
             paid_amount=0.0,
-            installment_amount=installment_amount,
+            installment_amount=0,
             frequency=frequency,
             description=description.strip(),
             start_date=start_date,
-            end_date=end_date,
+            end_date=None,
             is_completed=False
         )
         
@@ -68,22 +65,19 @@ class InstallmentController:
         else:
             return False, "حدث خطأ أثناء إضافة القسط", None
     
-    def update_installment(self, installment_id: int, total_amount: float, 
-                          paid_amount: float, installment_amount: float,
-                          frequency: str, description: str, 
-                          start_date: Optional[date], end_date: Optional[date]) -> tuple[bool, str]:
+    def update_installment(self, installment_id: int, total_amount: float,
+                          frequency: str, description: str,
+                          start_date: Optional[date], paid_amount: float = -1) -> tuple[bool, str]:
         """
         تحديث قسط
         
         Args:
             installment_id: معرف القسط
             total_amount: المبلغ الإجمالي الجديد
-            paid_amount: المبلغ المدفوع الجديد
-            installment_amount: مبلغ القسط الجديد
             frequency: دورية القسط الجديدة
             description: الوصف الجديد
             start_date: تاريخ البداية الجديد
-            end_date: تاريخ النهاية الجديد
+            paid_amount: المبلغ المدفوع الجديد (اختياري)
             
         Returns:
             tuple: (نجح, رسالة)
@@ -97,30 +91,33 @@ class InstallmentController:
         from utils.validators import InstallmentValidator
         validator = InstallmentValidator()
         is_valid, error_message = validator.validate_installment_data(
-            existing_installment.person_id, total_amount, installment_amount,
-            frequency, description, start_date, end_date
+            existing_installment.person_id, total_amount, 0,
+            frequency, description, start_date, None
         )
         if not is_valid:
             return False, error_message
         
+        # استخدام المبلغ المدفوع الحالي إذا لم يتم توفيره
+        current_paid_amount = paid_amount if paid_amount != -1 else existing_installment.paid_amount
+        
         # التحقق من أن المبلغ المدفوع لا يتجاوز المبلغ الإجمالي
-        if paid_amount > total_amount:
+        if current_paid_amount > total_amount:
             return False, "المبلغ المدفوع لا يمكن أن يتجاوز المبلغ الإجمالي"
         
         # تحديد حالة الإكمال
-        is_completed = paid_amount >= total_amount
+        is_completed = current_paid_amount >= total_amount
         
         # تحديث البيانات
         updated_installment = Installment(
             id=installment_id,
             person_id=existing_installment.person_id,
             total_amount=total_amount,
-            paid_amount=paid_amount,
-            installment_amount=installment_amount,
+            paid_amount=current_paid_amount,
+            installment_amount=0,
             frequency=frequency,
             description=description.strip(),
             start_date=start_date,
-            end_date=end_date,
+            end_date=None,
             is_completed=is_completed
         )
         
@@ -153,10 +150,10 @@ class InstallmentController:
             return False, "مبلغ الدفعة يتجاوز المبلغ المتبقي"
         
         return self.update_installment(
-            installment_id, existing_installment.total_amount, new_paid_amount,
-            existing_installment.installment_amount, existing_installment.frequency,
+            installment_id, existing_installment.total_amount,
+            existing_installment.frequency,
             existing_installment.description, existing_installment.start_date,
-            existing_installment.end_date
+            paid_amount=new_paid_amount
         )
     
     def delete_installment(self, installment_id: int) -> tuple[bool, str]:
@@ -255,8 +252,7 @@ class InstallmentController:
         return [inst for inst in all_installments 
                 if (search_term in inst.description.lower() or
                     search_term in inst.person_name.lower() or
-                    search_term in str(inst.total_amount) or
-                    search_term in str(inst.installment_amount))]
+                    search_term in str(inst.total_amount))]
     
     def get_installment_statistics(self) -> dict:
         """

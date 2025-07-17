@@ -14,6 +14,7 @@ from controllers.person_controller import PersonController
 from database.models import Installment
 from utils.helpers import MessageHelper, AppHelper, TableHelper, DateHelper, NumberHelper
 from views.dialogs.add_installment_dialog import AddInstallmentDialog
+from views.dialogs.installment_details_dialog import InstallmentDetailsDialog
 
 
 class InstallmentsView(QMainWindow):
@@ -129,10 +130,11 @@ class InstallmentsView(QMainWindow):
         self.edit_btn = QPushButton("تعديل")
         self.delete_btn = QPushButton("حذف")
         self.add_payment_btn = QPushButton("إضافة دفعة")
+        self.details_btn = QPushButton("عرض التفاصيل")
         self.refresh_btn = QPushButton("تحديث")
         
         # تنسيق الأزرار
-        buttons = [self.add_btn, self.edit_btn, self.delete_btn, self.add_payment_btn, self.refresh_btn]
+        buttons = [self.add_btn, self.edit_btn, self.delete_btn, self.add_payment_btn, self.details_btn, self.refresh_btn]
         for btn in buttons:
             btn.setMinimumHeight(35)
             btn.setStyleSheet("""
@@ -161,6 +163,7 @@ class InstallmentsView(QMainWindow):
         self.edit_btn.setEnabled(False)
         self.delete_btn.setEnabled(False)
         self.add_payment_btn.setEnabled(False)
+        self.details_btn.setEnabled(False)
         
         # ترتيب العناصر
         toolbar_layout.addWidget(search_label)
@@ -174,6 +177,7 @@ class InstallmentsView(QMainWindow):
         toolbar_layout.addWidget(self.edit_btn)
         toolbar_layout.addWidget(self.delete_btn)
         toolbar_layout.addWidget(self.add_payment_btn)
+        toolbar_layout.addWidget(self.details_btn)
         toolbar_layout.addWidget(self.refresh_btn)
         
         layout.addWidget(toolbar_frame)
@@ -200,8 +204,8 @@ class InstallmentsView(QMainWindow):
         
         # الجدول
         self.table = QTableWidget()
-        headers = ["المعرف", "اسم الزبون", "المبلغ الإجمالي", "المبلغ المدفوع", 
-                  "مبلغ القسط", "الدورية", "الوصف", "نسبة الإنجاز", "الحالة", "تاريخ البداية"]
+        headers = ["المعرف", "اسم الزبون", "المبلغ الإجمالي", 
+                  "الدورية", "الوصف", "نسبة الإنجاز", "الحالة", "تاريخ البداية"]
         TableHelper.setup_table_headers(self.table, headers)
         
         # تنسيق الجدول
@@ -278,6 +282,7 @@ class InstallmentsView(QMainWindow):
         self.edit_btn.clicked.connect(self.edit_installment)
         self.delete_btn.clicked.connect(self.delete_installment)
         self.add_payment_btn.clicked.connect(self.add_payment)
+        self.details_btn.clicked.connect(self.show_installment_details)
         self.refresh_btn.clicked.connect(self.load_installments)
         
         # أحداث الجدول
@@ -321,23 +326,13 @@ class InstallmentsView(QMainWindow):
             total_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
             self.table.setItem(row, 2, total_item)
             
-            # المبلغ المدفوع
-            paid_item = QTableWidgetItem(NumberHelper.format_currency(installment.paid_amount))
-            paid_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
-            self.table.setItem(row, 3, paid_item)
-            
-            # مبلغ القسط
-            installment_item = QTableWidgetItem(NumberHelper.format_currency(installment.installment_amount))
-            installment_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
-            self.table.setItem(row, 4, installment_item)
-            
             # الدورية
             frequency_map = {"monthly": "شهري", "weekly": "أسبوعي", "yearly": "سنوي"}
             frequency_text = frequency_map.get(installment.frequency, installment.frequency)
-            self.table.setItem(row, 5, QTableWidgetItem(frequency_text))
+            self.table.setItem(row, 3, QTableWidgetItem(frequency_text))
             
             # الوصف
-            self.table.setItem(row, 6, QTableWidgetItem(installment.description))
+            self.table.setItem(row, 4, QTableWidgetItem(installment.description))
             
             # نسبة الإنجاز
             percentage = NumberHelper.format_percentage(installment.completion_percentage)
@@ -355,7 +350,7 @@ class InstallmentsView(QMainWindow):
                 progress_item.setBackground(Qt.red)
                 progress_item.setForeground(Qt.white)
             
-            self.table.setItem(row, 7, progress_item)
+            self.table.setItem(row, 5, progress_item)
             
             # الحالة
             status = "مكتمل" if installment.is_completed else "نشط"
@@ -368,11 +363,11 @@ class InstallmentsView(QMainWindow):
                 status_item.setBackground(Qt.blue)
                 status_item.setForeground(Qt.white)
             
-            self.table.setItem(row, 8, status_item)
+            self.table.setItem(row, 6, status_item)
             
             # تاريخ البداية
             start_date = DateHelper.format_date(installment.start_date) if installment.start_date else "غير محدد"
-            self.table.setItem(row, 9, QTableWidgetItem(start_date))
+            self.table.setItem(row, 7, QTableWidgetItem(start_date))
         
         # ضبط عرض الأعمدة
         header = self.table.horizontalHeader()
@@ -397,8 +392,7 @@ class InstallmentsView(QMainWindow):
             if search_term:
                 if not (search_term in installment.description.lower() or
                        search_term in installment.person_name.lower() or
-                       search_term in str(installment.total_amount) or
-                       search_term in str(installment.installment_amount)):
+                       search_term in str(installment.total_amount)):
                     continue
             
             # فلترة الحالة
@@ -444,6 +438,7 @@ class InstallmentsView(QMainWindow):
         # تفعيل/تعطيل الأزرار
         self.edit_btn.setEnabled(has_selection)
         self.delete_btn.setEnabled(has_selection)
+        self.details_btn.setEnabled(has_selection)
         
         if has_selection:
             # الحصول على القسط المحدد
@@ -482,11 +477,9 @@ class InstallmentsView(QMainWindow):
             success, message, installment_id = self.installment_controller.add_installment(
                 person_id,
                 installment_data['total_amount'],
-                installment_data['installment_amount'],
                 installment_data['frequency'],
                 installment_data['description'],
-                installment_data['start_date'],
-                installment_data['end_date']
+                installment_data['start_date']
             )
             
             if success:
@@ -509,12 +502,9 @@ class InstallmentsView(QMainWindow):
             success, message = self.installment_controller.update_installment(
                 self.selected_installment.id,
                 installment_data['total_amount'],
-                installment_data['paid_amount'],
-                installment_data['installment_amount'],
                 installment_data['frequency'],
                 installment_data['description'],
-                installment_data['start_date'],
-                installment_data['end_date']
+                installment_data['start_date']
             )
             
             if success:
@@ -546,6 +536,16 @@ class InstallmentsView(QMainWindow):
             else:
                 MessageHelper.show_error(self, "خطأ", message)
     
+    def show_installment_details(self):
+        """
+        عرض تفاصيل القسط المحدد
+        """
+        if not self.selected_installment:
+            return
+        
+        dialog = InstallmentDetailsDialog(self.selected_installment, self)
+        dialog.exec_()
+
     def add_payment(self):
         """
         إضافة دفعة للقسط

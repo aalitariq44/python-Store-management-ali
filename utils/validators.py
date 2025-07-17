@@ -148,9 +148,6 @@ class InstallmentValidator:
             return False, "المبلغ الإجمالي كبير جداً"
         
         # التحقق من مبلغ القسط
-        if installment_amount <= 0:
-            return False, "مبلغ القسط يجب أن يكون أكبر من صفر"
-        
         if installment_amount > total_amount:
             return False, "مبلغ القسط لا يمكن أن يكون أكبر من المبلغ الإجمالي"
         

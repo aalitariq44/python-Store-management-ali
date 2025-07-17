@@ -95,19 +95,7 @@ class AddInstallmentDialog(QDialog):
         self.total_amount_input.setSuffix(" د.ع")
         form_layout.addRow("المبلغ الإجمالي: *", self.total_amount_input)
         
-        # المبلغ المدفوع
-        self.paid_amount_input = QDoubleSpinBox()
-        self.paid_amount_input.setRange(0.00, 999999999.99)
-        self.paid_amount_input.setDecimals(2)
-        self.paid_amount_input.setSuffix(" د.ع")
-        form_layout.addRow("المبلغ المدفوع:", self.paid_amount_input)
         
-        # مبلغ القسط
-        self.installment_amount_input = QDoubleSpinBox()
-        self.installment_amount_input.setRange(0.01, 999999999.99)
-        self.installment_amount_input.setDecimals(2)
-        self.installment_amount_input.setSuffix(" د.ع")
-        form_layout.addRow("مبلغ القسط: *", self.installment_amount_input)
         
         # دورية القسط
         self.frequency_combo = QComboBox()
@@ -130,16 +118,7 @@ class AddInstallmentDialog(QDialog):
         self.start_date_input.setDisplayFormat("yyyy-MM-dd")
         form_layout.addRow("تاريخ البداية:", self.start_date_input)
         
-        # تاريخ النهاية
-        self.end_date_input = QDateEdit()
-        self.end_date_input.setDate(QDate.currentDate().addYears(1))
-        self.end_date_input.setCalendarPopup(True)
-        self.end_date_input.setDisplayFormat("yyyy-MM-dd")
-        form_layout.addRow("تاريخ النهاية:", self.end_date_input)
         
-        # حالة الإكمال
-        self.is_completed_checkbox = QCheckBox("مكتمل")
-        form_layout.addRow("", self.is_completed_checkbox)
         
         # ملاحظة الحقول المطلوبة
         note_label = QLabel("* الحقول المطلوبة")
@@ -186,22 +165,6 @@ class AddInstallmentDialog(QDialog):
         """
         self.save_btn.clicked.connect(self.save_installment)
         self.cancel_btn.clicked.connect(self.reject)
-        
-        # التحديث التلقائي لحالة الإكمال
-        self.paid_amount_input.valueChanged.connect(self.update_completion_status)
-        self.total_amount_input.valueChanged.connect(self.update_completion_status)
-    
-    def update_completion_status(self):
-        """
-        تحديث حالة الإكمال تلقائياً
-        """
-        paid = self.paid_amount_input.value()
-        total = self.total_amount_input.value()
-        
-        if total > 0 and paid >= total:
-            self.is_completed_checkbox.setChecked(True)
-        else:
-            self.is_completed_checkbox.setChecked(False)
     
     def load_installment_data(self):
         """
@@ -209,8 +172,6 @@ class AddInstallmentDialog(QDialog):
         """
         if self.installment:
             self.total_amount_input.setValue(self.installment.total_amount)
-            self.paid_amount_input.setValue(self.installment.paid_amount)
-            self.installment_amount_input.setValue(self.installment.installment_amount)
             
             # تعيين الدورية
             frequency_map = {"monthly": 0, "weekly": 1, "yearly": 2}
@@ -224,12 +185,6 @@ class AddInstallmentDialog(QDialog):
                 if qdate:
                     self.start_date_input.setDate(qdate)
             
-            if self.installment.end_date:
-                qdate = DateHelper.date_to_qdate(self.installment.end_date)
-                if qdate:
-                    self.end_date_input.setDate(qdate)
-            
-            self.is_completed_checkbox.setChecked(self.installment.is_completed)
     
     def get_installment_data(self) -> dict:
         """
@@ -239,19 +194,18 @@ class AddInstallmentDialog(QDialog):
         frequency = frequency_map[self.frequency_combo.currentIndex()]
         
         start_date = DateHelper.qdate_to_date(self.start_date_input.date())
-        end_date = DateHelper.qdate_to_date(self.end_date_input.date())
         selected_person_id = self.person_combo.currentData()
         
         return {
             'person_id': selected_person_id,
             'total_amount': self.total_amount_input.value(),
-            'paid_amount': self.paid_amount_input.value(),
-            'installment_amount': self.installment_amount_input.value(),
+            'paid_amount': 0,  # Set to 0 as it's removed
+            'installment_amount': 0, # Set to 0 as it's removed
             'frequency': frequency,
             'description': self.description_input.toPlainText().strip(),
             'start_date': start_date,
-            'end_date': end_date,
-            'is_completed': self.is_completed_checkbox.isChecked()
+            'end_date': None, # Set to None as it's removed
+            'is_completed': False # Set to False as it's removed
         }
     
     def validate_data(self) -> tuple[bool, str]:
@@ -267,23 +221,11 @@ class AddInstallmentDialog(QDialog):
         if data['total_amount'] <= 0:
             return False, "المبلغ الإجمالي يجب أن يكون أكبر من صفر"
         
-        if data['paid_amount'] > data['total_amount']:
-            return False, "المبلغ المدفوع لا يمكن أن يتجاوز المبلغ الإجمالي"
-        
-        if data['installment_amount'] <= 0:
-            return False, "مبلغ القسط يجب أن يكون أكبر من صفر"
-        
-        if data['installment_amount'] > data['total_amount']:
-            return False, "مبلغ القسط لا يمكن أن يتجاوز المبلغ الإجمالي"
-        
         if not data['description']:
             return False, "وصف القسط مطلوب"
         
         if len(data['description']) > 200:
             return False, "وصف القسط طويل جداً (أكثر من 200 حرف)"
-        
-        if data['start_date'] and data['end_date'] and data['start_date'] >= data['end_date']:
-            return False, "تاريخ البداية يجب أن يكون قبل تاريخ النهاية"
         
         return True, ""
     

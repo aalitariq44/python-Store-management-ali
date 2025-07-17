@@ -348,7 +348,7 @@ class PersonDetailsView(QMainWindow):
         
         # جدول الأقساط
         self.installments_table = QTableWidget()
-        headers = ["المعرف", "المبلغ الإجمالي", "المبلغ المدفوع", "مبلغ القسط", "الدورية", "الوصف", "نسبة الإنجاز", "الحالة"]
+        headers = ["المعرف", "المبلغ الإجمالي", "الدورية", "الوصف", "نسبة الإنجاز", "الحالة"]
         TableHelper.setup_table_headers(self.installments_table, headers)
         
         self.installments_table.setAlternatingRowColors(True)
@@ -524,27 +524,17 @@ class PersonDetailsView(QMainWindow):
                 total_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
                 self.installments_table.setItem(row, 1, total_item)
                 
-                # المبلغ المدفوع
-                paid_item = QTableWidgetItem(NumberHelper.format_currency(installment.paid_amount))
-                paid_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
-                self.installments_table.setItem(row, 2, paid_item)
-                
-                # مبلغ القسط
-                installment_item = QTableWidgetItem(NumberHelper.format_currency(installment.installment_amount))
-                installment_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
-                self.installments_table.setItem(row, 3, installment_item)
-                
                 # الدورية
                 frequency_map = {"monthly": "شهري", "weekly": "أسبوعي", "yearly": "سنوي"}
                 frequency_text = frequency_map.get(installment.frequency, installment.frequency)
-                self.installments_table.setItem(row, 4, QTableWidgetItem(frequency_text))
+                self.installments_table.setItem(row, 2, QTableWidgetItem(frequency_text))
                 
                 # الوصف
-                self.installments_table.setItem(row, 5, QTableWidgetItem(installment.description))
+                self.installments_table.setItem(row, 3, QTableWidgetItem(installment.description))
                 
                 # نسبة الإنجاز
                 percentage = NumberHelper.format_percentage(installment.completion_percentage)
-                self.installments_table.setItem(row, 6, QTableWidgetItem(percentage))
+                self.installments_table.setItem(row, 4, QTableWidgetItem(percentage))
                 
                 # الحالة
                 status = "مكتمل" if installment.is_completed else "نشط"
@@ -555,7 +545,7 @@ class PersonDetailsView(QMainWindow):
                 else:
                     status_item.setBackground(Qt.blue)
                     status_item.setForeground(Qt.white)
-                self.installments_table.setItem(row, 7, status_item)
+                self.installments_table.setItem(row, 5, status_item)
             
         except Exception as e:
             MessageHelper.show_error(self, "خطأ", f"حدث خطأ أثناء تحميل الأقساط: {str(e)}")
@@ -765,11 +755,9 @@ class PersonDetailsView(QMainWindow):
             success, message, _ = self.installment_controller.add_installment(
                 self.person.id,
                 data['total_amount'],
-                data['installment_amount'],
                 data['frequency'],
                 data['description'],
-                data['start_date'],
-                data['end_date']
+                data['start_date']
             )
             
             if success:
@@ -797,12 +785,9 @@ class PersonDetailsView(QMainWindow):
             success, message = self.installment_controller.update_installment(
                 installment.id,
                 data['total_amount'],
-                data['paid_amount'],
-                data['installment_amount'],
                 data['frequency'],
                 data['description'],
-                data['start_date'],
-                data['end_date']
+                data['start_date']
             )
             
             if success:
