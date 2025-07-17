@@ -21,8 +21,8 @@ def check_requirements():
     
     # التحقق من PyQt5
     try:
-        import PyQt5
-        print(f"✅ PyQt5 {PyQt5.Qt.PYQT_VERSION_STR}")
+        from PyQt5 import QtCore
+        print(f"✅ PyQt5 {QtCore.PYQT_VERSION_STR}")
     except ImportError:
         print("❌ خطأ: PyQt5 غير مثبت")
         print("💡 قم بتثبيته باستخدام: pip install PyQt5")

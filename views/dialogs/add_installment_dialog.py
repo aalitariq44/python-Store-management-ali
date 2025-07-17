@@ -34,7 +34,7 @@ class AddInstallmentDialog(QDialog):
         """
         title = "تعديل قسط" if self.installment else "إضافة قسط جديد"
         self.setWindowTitle(title)
-        self.setFixedSize(550, 600)
+        self.setMinimumSize(600, 700) # استخدام حجم أدنى
         self.setModal(True)
         
         main_layout = QVBoxLayout(self)
@@ -50,26 +50,15 @@ class AddInstallmentDialog(QDialog):
         إضافة عنوان النافذة
         """
         title_frame = QFrame()
-        title_frame.setStyleSheet("""
-            QFrame {
-                background-color: #f39c12;
-                border-radius: 8px;
-                padding: 15px;
-            }
-        """)
+        title_frame.setObjectName("title-frame")
+        # Override background color for this specific dialog
+        title_frame.setStyleSheet("background-color: var(--warning-color);")
         
         title_layout = QVBoxLayout(title_frame)
         
         title_label = QLabel(title)
         title_label.setAlignment(Qt.AlignCenter)
-        title_label.setStyleSheet("""
-            QLabel {
-                color: white;
-                font-size: 18px;
-                font-weight: bold;
-                background: transparent;
-            }
-        """)
+
         title_layout.addWidget(title_label)
         
         layout.addWidget(title_frame)
@@ -79,14 +68,7 @@ class AddInstallmentDialog(QDialog):
         إضافة نموذج الإدخال
         """
         form_frame = QFrame()
-        form_frame.setStyleSheet("""
-            QFrame {
-                background-color: #f8f9fa;
-                border: 1px solid #dee2e6;
-                border-radius: 8px;
-                padding: 20px;
-            }
-        """)
+        # Remove inline style
         
         form_layout = QFormLayout(form_frame)
         form_layout.setSpacing(15)
@@ -96,7 +78,6 @@ class AddInstallmentDialog(QDialog):
         self.total_amount_input.setRange(0.01, 999999999.99)
         self.total_amount_input.setDecimals(2)
         self.total_amount_input.setSuffix(" ر.س")
-        self.style_input(self.total_amount_input)
         form_layout.addRow("المبلغ الإجمالي: *", self.total_amount_input)
         
         # المبلغ المدفوع
@@ -104,7 +85,6 @@ class AddInstallmentDialog(QDialog):
         self.paid_amount_input.setRange(0.00, 999999999.99)
         self.paid_amount_input.setDecimals(2)
         self.paid_amount_input.setSuffix(" ر.س")
-        self.style_input(self.paid_amount_input)
         form_layout.addRow("المبلغ المدفوع:", self.paid_amount_input)
         
         # مبلغ القسط
@@ -112,7 +92,6 @@ class AddInstallmentDialog(QDialog):
         self.installment_amount_input.setRange(0.01, 999999999.99)
         self.installment_amount_input.setDecimals(2)
         self.installment_amount_input.setSuffix(" ر.س")
-        self.style_input(self.installment_amount_input)
         form_layout.addRow("مبلغ القسط: *", self.installment_amount_input)
         
         # دورية القسط
@@ -121,14 +100,12 @@ class AddInstallmentDialog(QDialog):
         self.frequency_combo.setItemText(0, "شهري")
         self.frequency_combo.setItemText(1, "أسبوعي")
         self.frequency_combo.setItemText(2, "سنوي")
-        self.style_input(self.frequency_combo)
         form_layout.addRow("دورية القسط: *", self.frequency_combo)
         
         # وصف القسط
         self.description_input = QTextEdit()
         self.description_input.setPlaceholderText("أدخل وصف القسط")
-        self.description_input.setMaximumHeight(80)
-        self.style_input(self.description_input)
+        self.description_input.setMinimumHeight(100)
         form_layout.addRow("وصف القسط: *", self.description_input)
         
         # تاريخ البداية
@@ -136,7 +113,6 @@ class AddInstallmentDialog(QDialog):
         self.start_date_input.setDate(QDate.currentDate())
         self.start_date_input.setCalendarPopup(True)
         self.start_date_input.setDisplayFormat("yyyy-MM-dd")
-        self.style_input(self.start_date_input)
         form_layout.addRow("تاريخ البداية:", self.start_date_input)
         
         # تاريخ النهاية
@@ -144,53 +120,18 @@ class AddInstallmentDialog(QDialog):
         self.end_date_input.setDate(QDate.currentDate().addYears(1))
         self.end_date_input.setCalendarPopup(True)
         self.end_date_input.setDisplayFormat("yyyy-MM-dd")
-        self.style_input(self.end_date_input)
         form_layout.addRow("تاريخ النهاية:", self.end_date_input)
         
         # حالة الإكمال
         self.is_completed_checkbox = QCheckBox("مكتمل")
-        self.is_completed_checkbox.setStyleSheet("""
-            QCheckBox {
-                font-size: 12px;
-                font-weight: bold;
-            }
-            QCheckBox::indicator {
-                width: 18px;
-                height: 18px;
-            }
-        """)
         form_layout.addRow("", self.is_completed_checkbox)
         
         # ملاحظة الحقول المطلوبة
         note_label = QLabel("* الحقول المطلوبة")
-        note_label.setStyleSheet("""
-            QLabel {
-                color: #dc3545;
-                font-size: 11px;
-                font-style: italic;
-            }
-        """)
+        note_label.setObjectName("error-label")
         form_layout.addRow("", note_label)
         
         layout.addWidget(form_frame)
-    
-    def style_input(self, widget):
-        """
-        تنسيق حقل الإدخال
-        """
-        widget.setStyleSheet("""
-            QLineEdit, QTextEdit, QDoubleSpinBox, QDateEdit, QComboBox {
-                padding: 8px 12px;
-                border: 2px solid #ced4da;
-                border-radius: 5px;
-                font-size: 12px;
-                background-color: white;
-            }
-            QLineEdit:focus, QTextEdit:focus, QDoubleSpinBox:focus, QDateEdit:focus, QComboBox:focus {
-                border-color: #f39c12;
-                outline: none;
-            }
-        """)
     
     def add_buttons(self, layout: QVBoxLayout):
         """
@@ -202,38 +143,10 @@ class AddInstallmentDialog(QDialog):
         
         save_text = "تحديث" if self.installment else "حفظ"
         self.save_btn = QPushButton(save_text)
-        self.save_btn.setMinimumHeight(40)
-        self.save_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #28a745;
-                color: white;
-                border: none;
-                border-radius: 5px;
-                font-size: 14px;
-                font-weight: bold;
-                padding: 10px 20px;
-            }
-            QPushButton:hover {
-                background-color: #218838;
-            }
-        """)
+        self.save_btn.setObjectName("edit-button")
         
         self.cancel_btn = QPushButton("إلغاء")
-        self.cancel_btn.setMinimumHeight(40)
-        self.cancel_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #6c757d;
-                color: white;
-                border: none;
-                border-radius: 5px;
-                font-size: 14px;
-                font-weight: bold;
-                padding: 10px 20px;
-            }
-            QPushButton:hover {
-                background-color: #545b62;
-            }
-        """)
+        # No objectName needed for default style
         
         buttons_layout.addStretch()
         buttons_layout.addWidget(self.save_btn)

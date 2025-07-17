@@ -32,13 +32,13 @@ class AddPersonDialog(QDialog):
         # إعداد النافذة
         title = "تعديل زبون" if self.person else "إضافة زبون جديد"
         self.setWindowTitle(title)
-        self.setFixedSize(500, 400)
+        self.setMinimumSize(600, 550)  # استخدام حجم أدنى لمرونة أكبر
         self.setModal(True)
         
         # التخطيط الرئيسي
         main_layout = QVBoxLayout(self)
-        main_layout.setSpacing(15)
-        main_layout.setContentsMargins(20, 20, 20, 20)
+        main_layout.setSpacing(20)
+        main_layout.setContentsMargins(25, 25, 25, 25)
         
         # إضافة العنوان
         self.add_title(main_layout, title)
@@ -58,26 +58,14 @@ class AddPersonDialog(QDialog):
             title: العنوان
         """
         title_frame = QFrame()
-        title_frame.setStyleSheet("""
-            QFrame {
-                background-color: #007bff;
-                border-radius: 8px;
-                padding: 15px;
-            }
-        """)
+        title_frame.setObjectName("title-frame") # استخدام ObjectName للتنسيق من QSS
         
         title_layout = QVBoxLayout(title_frame)
         
         title_label = QLabel(title)
         title_label.setAlignment(Qt.AlignCenter)
-        title_label.setStyleSheet("""
-            QLabel {
-                color: white;
-                font-size: 18px;
-                font-weight: bold;
-                background: transparent;
-            }
-        """)
+        # إزالة التنسيق المباشر، سيعتمد على QSS
+        
         title_layout.addWidget(title_label)
         
         layout.addWidget(title_frame)
@@ -90,70 +78,34 @@ class AddPersonDialog(QDialog):
             layout: التخطيط
         """
         form_frame = QFrame()
-        form_frame.setStyleSheet("""
-            QFrame {
-                background-color: #f8f9fa;
-                border: 1px solid #dee2e6;
-                border-radius: 8px;
-                padding: 20px;
-            }
-        """)
+        # إزالة التنسيق المباشر
         
         form_layout = QFormLayout(form_frame)
-        form_layout.setSpacing(15)
+        form_layout.setLabelAlignment(Qt.AlignRight)
+        form_layout.setSpacing(18)
         
         # حقل الاسم
         self.name_input = QLineEdit()
         self.name_input.setPlaceholderText("أدخل اسم الزبون")
-        self.style_input(self.name_input)
         form_layout.addRow("الاسم: *", self.name_input)
         
         # حقل رقم الهاتف
         self.phone_input = QLineEdit()
         self.phone_input.setPlaceholderText("أدخل رقم الهاتف")
-        self.style_input(self.phone_input)
         form_layout.addRow("رقم الهاتف:", self.phone_input)
         
         # حقل العنوان
         self.address_input = QTextEdit()
         self.address_input.setPlaceholderText("أدخل العنوان")
-        self.address_input.setMaximumHeight(80)
-        self.style_input(self.address_input)
+        self.address_input.setMinimumHeight(120)
         form_layout.addRow("العنوان:", self.address_input)
         
         # ملاحظة الحقول المطلوبة
         note_label = QLabel("* الحقول المطلوبة")
-        note_label.setStyleSheet("""
-            QLabel {
-                color: #dc3545;
-                font-size: 11px;
-                font-style: italic;
-            }
-        """)
+        note_label.setObjectName("error-label") # استخدام ObjectName
         form_layout.addRow("", note_label)
         
         layout.addWidget(form_frame)
-    
-    def style_input(self, widget):
-        """
-        تنسيق حقل الإدخال
-        
-        Args:
-            widget: حقل الإدخال
-        """
-        widget.setStyleSheet("""
-            QLineEdit, QTextEdit {
-                padding: 8px 12px;
-                border: 2px solid #ced4da;
-                border-radius: 5px;
-                font-size: 12px;
-                background-color: white;
-            }
-            QLineEdit:focus, QTextEdit:focus {
-                border-color: #007bff;
-                outline: none;
-            }
-        """)
     
     def add_buttons(self, layout: QVBoxLayout):
         """
@@ -169,45 +121,11 @@ class AddPersonDialog(QDialog):
         # زر الحفظ
         save_text = "تحديث" if self.person else "حفظ"
         self.save_btn = QPushButton(save_text)
-        self.save_btn.setMinimumHeight(40)
-        self.save_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #28a745;
-                color: white;
-                border: none;
-                border-radius: 5px;
-                font-size: 14px;
-                font-weight: bold;
-                padding: 10px 20px;
-            }
-            QPushButton:hover {
-                background-color: #218838;
-            }
-            QPushButton:pressed {
-                background-color: #1e7e34;
-            }
-        """)
+        self.save_btn.setObjectName("edit-button") # استخدام ObjectName
         
         # زر الإلغاء
         self.cancel_btn = QPushButton("إلغاء")
-        self.cancel_btn.setMinimumHeight(40)
-        self.cancel_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #6c757d;
-                color: white;
-                border: none;
-                border-radius: 5px;
-                font-size: 14px;
-                font-weight: bold;
-                padding: 10px 20px;
-            }
-            QPushButton:hover {
-                background-color: #545b62;
-            }
-            QPushButton:pressed {
-                background-color: #495057;
-            }
-        """)
+        # يمكن إضافة objectName هنا إذا أردنا تنسيقًا خاصًا
         
         # ترتيب الأزرار
         buttons_layout.addStretch()

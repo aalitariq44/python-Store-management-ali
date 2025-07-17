@@ -25,7 +25,7 @@ QPushButton.main-button {
     border: none;
     border-radius: 10px;
     padding: 20px;
-    font-size: 16px;
+    font-size: 24px;
     font-weight: bold;
     min-height: 100px;
 }
@@ -69,10 +69,11 @@ QHeaderView::section {
 /* حقول الإدخال */
 QLineEdit, QTextEdit, QSpinBox, QDoubleSpinBox, QDateEdit, QComboBox {
     border: 2px solid #ced4da;
-    border-radius: 5px;
-    padding: 8px 12px;
-    font-size: 12px;
+    border-radius: 8px;
+    padding: 14px 18px;
+    font-size: 18px;
     background-color: white;
+    min-height: 30px; /* Added minimum height */
 }
 
 QLineEdit:focus, QTextEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus, QDateEdit:focus, QComboBox:focus {
@@ -85,10 +86,11 @@ QPushButton {
     background-color: var(--primary-color);
     color: white;
     border: none;
-    border-radius: 5px;
-    padding: 8px 16px;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-size: 16px; /* Added font-size */
     font-weight: bold;
-    min-height: 30px;
+    min-height: 40px;
 }
 
 QPushButton:hover {
@@ -184,16 +186,17 @@ QCheckBox::indicator:checked {
 /* التسميات */
 QLabel {
     color: #495057;
+    font-size: 16px; /* Increased default label font size */
 }
 
 QLabel.title {
-    font-size: 18px;
+    font-size: 22px;
     font-weight: bold;
     color: var(--dark-color);
 }
 
 QLabel.subtitle {
-    font-size: 14px;
+    font-size: 18px;
     color: var(--secondary-color);
 }
 
