@@ -693,7 +693,7 @@ class PersonDetailsView(QMainWindow):
         debt_item = self.debts_table.item(current_row, 0)
         debt = debt_item.data(Qt.UserRole)
         
-        dialog = AddDebtDialog(self, person_id=self.person.id, debt=debt)
+        dialog = AddDebtDialog(self, debt=debt, person_id=self.person.id)
         if dialog.exec_() == dialog.Accepted:
             debt_data = dialog.get_debt_data()
             
@@ -701,7 +701,8 @@ class PersonDetailsView(QMainWindow):
                 debt.id,
                 debt_data['amount'],
                 debt_data['description'],
-                debt_data['due_date']
+                debt_data['due_date'],
+                debt_data['is_paid']
             )
             
             if success:
@@ -766,7 +767,9 @@ class PersonDetailsView(QMainWindow):
                 data['total_amount'],
                 data['installment_amount'],
                 data['frequency'],
-                data['description']
+                data['description'],
+                data['start_date'],
+                data['end_date']
             )
             
             if success:
@@ -787,16 +790,19 @@ class PersonDetailsView(QMainWindow):
         item = self.installments_table.item(current_row, 0)
         installment = item.data(Qt.UserRole)
         
-        dialog = AddInstallmentDialog(self, person_id=self.person.id, installment=installment)
+        dialog = AddInstallmentDialog(self, installment=installment, person_id=self.person.id)
         if dialog.exec_() == dialog.Accepted:
             data = dialog.get_installment_data()
             
             success, message = self.installment_controller.update_installment(
                 installment.id,
                 data['total_amount'],
+                data['paid_amount'],
                 data['installment_amount'],
                 data['frequency'],
-                data['description']
+                data['description'],
+                data['start_date'],
+                data['end_date']
             )
             
             if success:
@@ -837,14 +843,14 @@ class PersonDetailsView(QMainWindow):
         """
         dialog = AddInternetDialog(self, person_id=self.person.id)
         if dialog.exec_() == dialog.Accepted:
-            data = dialog.get_data()
+            data = dialog.get_subscription_data()
             
             success, message, _ = self.internet_controller.add_subscription(
                 self.person.id,
                 data['plan_name'],
                 data['monthly_fee'],
-                data['start_date'],
                 data['speed'],
+                data['start_date'],
                 data['end_date']
             )
             
@@ -866,17 +872,18 @@ class PersonDetailsView(QMainWindow):
         item = self.internet_table.item(current_row, 0)
         subscription = item.data(Qt.UserRole)
         
-        dialog = AddInternetDialog(self, person_id=self.person.id, subscription=subscription)
+        dialog = AddInternetDialog(self, subscription=subscription, person_id=self.person.id)
         if dialog.exec_() == dialog.Accepted:
-            data = dialog.get_data()
+            data = dialog.get_subscription_data()
             
             success, message = self.internet_controller.update_subscription(
                 subscription.id,
                 data['plan_name'],
                 data['monthly_fee'],
-                data['start_date'],
                 data['speed'],
-                data['end_date']
+                data['start_date'],
+                data['end_date'],
+                data['is_active']
             )
             
             if success:
@@ -918,15 +925,22 @@ class PersonDetailsView(QMainWindow):
         item = self.internet_table.item(current_row, 0)
         subscription = item.data(Qt.UserRole)
         
-        new_status = not subscription.is_active
-        action_text = "تفعيل" if new_status else "إلغاء تفعيل"
-        
-        if MessageHelper.confirm(self, "تأكيد", f"هل أنت متأكد من {action_text} الاشتراك '{subscription.plan_name}'؟"):
-            success, message = self.internet_controller.toggle_subscription_status(subscription.id)
-            
-            if success:
-                MessageHelper.show_info(self, "نجح", message)
-                self.load_internet_subscriptions()
-                self.update_stats()
+        if subscription.is_active:
+            action_text = "إلغاء تفعيل"
+            if MessageHelper.confirm(self, "تأكيد", f"هل أنت متأكد من {action_text} الاشتراك '{subscription.plan_name}'؟"):
+                success, message = self.internet_controller.deactivate_subscription(subscription.id)
             else:
-                MessageHelper.show_error(self, "خطأ", message)
+                return
+        else:
+            action_text = "تفعيل"
+            if MessageHelper.confirm(self, "تأكيد", f"هل أنت متأكد من {action_text} الاشتراك '{subscription.plan_name}'؟"):
+                success, message = self.internet_controller.activate_subscription(subscription.id)
+            else:
+                return
+
+        if success:
+            MessageHelper.show_info(self, "نجح", message)
+            self.load_internet_subscriptions()
+            self.update_stats()
+        else:
+            MessageHelper.show_error(self, "خطأ", message)

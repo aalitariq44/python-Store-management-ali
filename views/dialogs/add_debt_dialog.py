@@ -5,12 +5,13 @@
 
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QFormLayout,
                              QLineEdit, QTextEdit, QPushButton, QLabel, QFrame,
-                             QDateEdit, QCheckBox, QDoubleSpinBox)
+                             QDateEdit, QCheckBox, QDoubleSpinBox, QComboBox)
 from PyQt5.QtCore import Qt, QDate
 from PyQt5.QtGui import QFont
 from datetime import date
 from database.models import Debt
 from utils.helpers import MessageHelper, DateHelper
+from controllers.person_controller import PersonController
 
 
 class AddDebtDialog(QDialog):
@@ -22,6 +23,7 @@ class AddDebtDialog(QDialog):
         super().__init__(parent)
         self.debt = debt
         self.person_id = person_id  # للإضافة الجديدة
+        self.person_controller = PersonController()
         self.init_ui()
         self.setup_connections()
         
@@ -73,11 +75,24 @@ class AddDebtDialog(QDialog):
         form_layout = QFormLayout(form_frame)
         form_layout.setSpacing(15)
         
+        # حقل اختيار الزبون
+        self.person_combo = QComboBox()
+        self.populate_persons_combo()
+        form_layout.addRow("الزبون: *", self.person_combo)
+        
+        if self.person_id:
+            # إذا تم تحديد الزبون مسبقًا، قم بتعيينه ومنع التغيير
+            for i in range(self.person_combo.count()):
+                if self.person_combo.itemData(i) == self.person_id:
+                    self.person_combo.setCurrentIndex(i)
+                    break
+            self.person_combo.setEnabled(False)
+        
         # مبلغ الدين
         self.amount_input = QDoubleSpinBox()
         self.amount_input.setRange(0.01, 999999999.99)
         self.amount_input.setDecimals(2)
-        self.amount_input.setSuffix(" ر.س")
+        self.amount_input.setSuffix(" د.ع")
         form_layout.addRow("مبلغ الدين: *", self.amount_input)
         
         # وصف الدين
@@ -103,6 +118,17 @@ class AddDebtDialog(QDialog):
         form_layout.addRow("", note_label)
         
         layout.addWidget(form_frame)
+
+    def populate_persons_combo(self):
+        """
+        تعبئة قائمة الزبائن
+        """
+        self.person_combo.clear()
+        self.person_combo.addItem("اختر زبون...", None)
+        persons = self.person_controller.get_all_persons()
+        if persons:
+            for person in persons:
+                self.person_combo.addItem(f"{person.name} ({person.phone})", person.id)
     
     def add_buttons(self, layout: QVBoxLayout):
         """
@@ -152,8 +178,10 @@ class AddDebtDialog(QDialog):
         الحصول على بيانات الدين من النموذج
         """
         due_date = DateHelper.qdate_to_date(self.due_date_input.date())
+        selected_person_id = self.person_combo.currentData()
         
         return {
+            'person_id': selected_person_id,
             'amount': self.amount_input.value(),
             'description': self.description_input.toPlainText().strip(),
             'due_date': due_date,
@@ -165,6 +193,10 @@ class AddDebtDialog(QDialog):
         التحقق من صحة البيانات
         """
         data = self.get_debt_data()
+        
+        # التحقق من اختيار الزبون
+        if not self.person_id and not data['person_id']:
+            return False, "الرجاء اختيار زبون"
         
         if data['amount'] <= 0:
             return False, "مبلغ الدين يجب أن يكون أكبر من صفر"

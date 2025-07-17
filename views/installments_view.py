@@ -474,25 +474,26 @@ class InstallmentsView(QMainWindow):
         if dialog.exec_() == dialog.Accepted:
             installment_data = dialog.get_installment_data()
             
-            # هنا نحتاج person_id - يمكن تحسين هذا لاحقاً
-            if persons:
-                person_id = persons[0].id  # مؤقت - يختار أول زبون
-                
-                success, message, installment_id = self.installment_controller.add_installment(
-                    person_id,
-                    installment_data['total_amount'],
-                    installment_data['installment_amount'],
-                    installment_data['frequency'],
-                    installment_data['description'],
-                    installment_data['start_date'],
-                    installment_data['end_date']
-                )
-                
-                if success:
-                    MessageHelper.show_info(self, "نجح", message)
-                    self.load_installments()
-                else:
-                    MessageHelper.show_error(self, "خطأ", message)
+            person_id = installment_data.get('person_id')
+            if not person_id:
+                MessageHelper.show_error(self, "خطأ", "لم يتم اختيار زبون.")
+                return
+
+            success, message, installment_id = self.installment_controller.add_installment(
+                person_id,
+                installment_data['total_amount'],
+                installment_data['installment_amount'],
+                installment_data['frequency'],
+                installment_data['description'],
+                installment_data['start_date'],
+                installment_data['end_date']
+            )
+            
+            if success:
+                MessageHelper.show_info(self, "نجح", message)
+                self.load_installments()
+            else:
+                MessageHelper.show_error(self, "خطأ", message)
     
     def edit_installment(self):
         """

@@ -5,12 +5,13 @@
 
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QFormLayout,
                              QLineEdit, QTextEdit, QPushButton, QLabel, QFrame,
-                             QDateEdit, QCheckBox, QDoubleSpinBox)
+                             QDateEdit, QCheckBox, QDoubleSpinBox, QComboBox)
 from PyQt5.QtCore import Qt, QDate
 from PyQt5.QtGui import QFont
 from datetime import date
 from database.models import InternetSubscription
 from utils.helpers import MessageHelper, DateHelper
+from controllers.person_controller import PersonController
 
 
 class AddInternetDialog(QDialog):
@@ -22,6 +23,7 @@ class AddInternetDialog(QDialog):
         super().__init__(parent)
         self.subscription = subscription
         self.person_id = person_id
+        self.person_controller = PersonController()
         self.init_ui()
         self.setup_connections()
         
@@ -72,6 +74,19 @@ class AddInternetDialog(QDialog):
         form_layout = QFormLayout(form_frame)
         form_layout.setSpacing(15)
         
+        # حقل اختيار الزبون
+        self.person_combo = QComboBox()
+        self.populate_persons_combo()
+        form_layout.addRow("الزبون: *", self.person_combo)
+        
+        if self.person_id:
+            # إذا تم تحديد الزبون مسبقًا، قم بتعيينه ومنع التغيير
+            for i in range(self.person_combo.count()):
+                if self.person_combo.itemData(i) == self.person_id:
+                    self.person_combo.setCurrentIndex(i)
+                    break
+            self.person_combo.setEnabled(False)
+        
         # اسم الباقة
         self.plan_name_input = QLineEdit()
         self.plan_name_input.setPlaceholderText("مثال: باقة الذهبية")
@@ -81,7 +96,7 @@ class AddInternetDialog(QDialog):
         self.monthly_fee_input = QDoubleSpinBox()
         self.monthly_fee_input.setRange(0.00, 999999.99)
         self.monthly_fee_input.setDecimals(2)
-        self.monthly_fee_input.setSuffix(" ر.س")
+        self.monthly_fee_input.setSuffix(" د.ع")
         form_layout.addRow("الرسوم الشهرية:", self.monthly_fee_input)
         
         # السرعة
@@ -114,6 +129,17 @@ class AddInternetDialog(QDialog):
         form_layout.addRow("", note_label)
         
         layout.addWidget(form_frame)
+
+    def populate_persons_combo(self):
+        """
+        تعبئة قائمة الزبائن
+        """
+        self.person_combo.clear()
+        self.person_combo.addItem("اختر زبون...", None)
+        persons = self.person_controller.get_all_persons()
+        if persons:
+            for person in persons:
+                self.person_combo.addItem(f"{person.name} ({person.phone})", person.id)
     
     def add_buttons(self, layout: QVBoxLayout):
         """
@@ -170,8 +196,10 @@ class AddInternetDialog(QDialog):
         """
         start_date = DateHelper.qdate_to_date(self.start_date_input.date())
         end_date = DateHelper.qdate_to_date(self.end_date_input.date())
+        selected_person_id = self.person_combo.currentData()
         
         return {
+            'person_id': selected_person_id,
             'plan_name': self.plan_name_input.text().strip(),
             'monthly_fee': self.monthly_fee_input.value(),
             'speed': self.speed_input.text().strip(),
@@ -185,6 +213,10 @@ class AddInternetDialog(QDialog):
         التحقق من صحة البيانات
         """
         data = self.get_subscription_data()
+        
+        # التحقق من اختيار الزبون
+        if not self.person_id and not data['person_id']:
+            return False, "الرجاء اختيار زبون"
         
         if not data['plan_name']:
             return False, "اسم الباقة مطلوب"

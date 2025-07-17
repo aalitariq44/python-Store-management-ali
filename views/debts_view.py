@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                              QPushButton, QTableWidget, QTableWidgetItem, QLineEdit,
                              QLabel, QHeaderView, QFrame, QComboBox)
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QColor
 from controllers.debt_controller import DebtController
 from controllers.person_controller import PersonController
 from database.models import Debt
@@ -321,18 +321,13 @@ class DebtsView(QMainWindow):
             
             # تلوين الحالة
             if debt.is_paid:
-                status_item.setBackground(Qt.green)
-                status_item.setForeground(Qt.white)
+                status_item.setForeground(QColor("#28a745"))
             else:
+                status_item.setForeground(QColor("#dc3545"))
                 # فحص إذا كان متأخر
                 from datetime import date
                 if debt.due_date and debt.due_date < date.today():
-                    status_item.setBackground(Qt.red)
-                    status_item.setForeground(Qt.white)
                     status_item.setText("متأخر")
-                else:
-                    status_item.setBackground(Qt.yellow)
-                    status_item.setForeground(Qt.black)
             
             self.table.setItem(row, 5, status_item)
             
@@ -438,35 +433,32 @@ class DebtsView(QMainWindow):
         """
         إضافة دين جديد
         """
-        # أولاً نحتاج لاختيار الزبون
         persons = self.person_controller.get_all_persons()
         if not persons:
             MessageHelper.show_warning(self, "تنبيه", "يجب إضافة زبائن أولاً قبل إضافة الديون")
             return
         
-        # يمكن إضافة نافذة اختيار الزبون هنا
-        # لكن للبساطة سنفترض أن المستخدم سيختار من نافذة الديالوج
-        
         dialog = AddDebtDialog(self)
         if dialog.exec_() == dialog.Accepted:
             debt_data = dialog.get_debt_data()
             
-            # هنا نحتاج person_id - يمكن تحسين هذا لاحقاً
-            if persons:
-                person_id = persons[0].id  # مؤقت - يختار أول زبون
-                
-                success, message, debt_id = self.debt_controller.add_debt(
-                    person_id,
-                    debt_data['amount'],
-                    debt_data['description'],
-                    debt_data['due_date']
-                )
-                
-                if success:
-                    MessageHelper.show_info(self, "نجح", message)
-                    self.load_debts()
-                else:
-                    MessageHelper.show_error(self, "خطأ", message)
+            person_id = debt_data.get('person_id')
+            if not person_id:
+                MessageHelper.show_error(self, "خطأ", "لم يتم اختيار زبون.")
+                return
+
+            success, message, debt_id = self.debt_controller.add_debt(
+                person_id,
+                debt_data['amount'],
+                debt_data['description'],
+                debt_data['due_date']
+            )
+            
+            if success:
+                MessageHelper.show_info(self, "نجح", message)
+                self.load_debts()
+            else:
+                MessageHelper.show_error(self, "خطأ", message)
     
     def edit_debt(self):
         """

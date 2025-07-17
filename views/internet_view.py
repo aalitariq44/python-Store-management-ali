@@ -524,26 +524,27 @@ class InternetView(QMainWindow):
         
         dialog = AddInternetDialog(self)
         if dialog.exec_() == dialog.Accepted:
-            internet_data = dialog.get_internet_data()
+            internet_data = dialog.get_subscription_data()
             
-            # هنا نحتاج person_id - يمكن تحسين هذا لاحقاً
-            if persons:
-                person_id = persons[0].id  # مؤقت - يختار أول زبون
-                
-                success, message, internet_id = self.internet_controller.add_subscription(
-                    person_id,
-                    internet_data['plan_name'],
-                    internet_data['monthly_fee'],
-                    internet_data['speed'],
-                    internet_data['start_date'],
-                    internet_data['end_date']
-                )
-                
-                if success:
-                    MessageHelper.show_info(self, "نجح", message)
-                    self.load_internet_subscriptions()
-                else:
-                    MessageHelper.show_error(self, "خطأ", message)
+            person_id = internet_data.get('person_id')
+            if not person_id:
+                MessageHelper.show_error(self, "خطأ", "لم يتم اختيار زبون.")
+                return
+
+            success, message, internet_id = self.internet_controller.add_subscription(
+                person_id,
+                internet_data['plan_name'],
+                internet_data['monthly_fee'],
+                internet_data['speed'],
+                internet_data['start_date'],
+                internet_data['end_date']
+            )
+            
+            if success:
+                MessageHelper.show_info(self, "نجح", message)
+                self.load_internet_subscriptions()
+            else:
+                MessageHelper.show_error(self, "خطأ", message)
     
     def edit_internet_subscription(self):
         """
@@ -554,7 +555,7 @@ class InternetView(QMainWindow):
         
         dialog = AddInternetDialog(self, self.selected_subscription)
         if dialog.exec_() == dialog.Accepted:
-            internet_data = dialog.get_internet_data()
+            internet_data = dialog.get_subscription_data()
             
             success, message = self.internet_controller.update_subscription(
                 self.selected_subscription.id,
@@ -563,7 +564,7 @@ class InternetView(QMainWindow):
                 internet_data['speed'],
                 internet_data['start_date'],
                 internet_data['end_date'],
-                self.selected_subscription.is_active
+                internet_data['is_active']
             )
             
             if success:
