@@ -7,7 +7,7 @@
 from typing import List, Optional, Dict, Any
 from datetime import datetime, date
 from .database_connection import DatabaseConnection
-from .models import Person, Debt, Installment, InternetSubscription
+from .models import Person, Debt, Installment, InternetSubscription, Payment
 
 
 class PersonQueries:
@@ -419,4 +419,55 @@ class InternetSubscriptionQueries:
         """
         query = "DELETE FROM internet_subscriptions WHERE id = ?"
         result = self.db.execute_query(query, (subscription_id,))
+        return result is not None
+
+
+class PaymentQueries:
+    """
+    استعلامات خاصة بالدفعات
+    """
+
+    def __init__(self, db: DatabaseConnection):
+        self.db = db
+
+    def create_payment(self, payment: Payment) -> Optional[int]:
+        """
+        إضافة دفعة جديدة
+        """
+        query = """
+            INSERT INTO payments (installment_id, amount, payment_date)
+            VALUES (?, ?, ?)
+        """
+        return self.db.execute_insert(query, (
+            payment.installment_id, payment.amount,
+            payment.payment_date.isoformat() if payment.payment_date else None
+        ))
+
+    def get_payments_by_installment(self, installment_id: int) -> List[Payment]:
+        """
+        الحصول على دفعات قسط معين
+        """
+        query = """
+            SELECT * FROM payments
+            WHERE installment_id = ?
+            ORDER BY payment_date DESC
+        """
+        rows = self.db.execute_query(query, (installment_id,))
+
+        if rows:
+            return [Payment(
+                id=row['id'],
+                installment_id=row['installment_id'],
+                amount=row['amount'],
+                payment_date=date.fromisoformat(row['payment_date']) if row['payment_date'] else None,
+                created_at=datetime.fromisoformat(row['created_at']) if row['created_at'] else None
+            ) for row in rows]
+        return []
+
+    def delete_payment(self, payment_id: int) -> bool:
+        """
+        حذف دفعة
+        """
+        query = "DELETE FROM payments WHERE id = ?"
+        result = self.db.execute_query(query, (payment_id,))
         return result is not None

@@ -543,7 +543,7 @@ class InstallmentsView(QMainWindow):
         if not self.selected_installment:
             return
         
-        dialog = InstallmentDetailsDialog(self.selected_installment, self)
+        dialog = InstallmentDetailsDialog(self.selected_installment, self.installment_controller.db, self)
         dialog.exec_()
 
     def add_payment(self):

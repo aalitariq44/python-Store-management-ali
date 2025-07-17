@@ -7,8 +7,8 @@
 from typing import List, Optional
 from datetime import date
 from database.database_connection import DatabaseConnection
-from database.queries import InstallmentQueries
-from database.models import Installment
+from database.queries import InstallmentQueries, PaymentQueries
+from database.models import Installment, Payment
 
 
 class InstallmentController:
@@ -19,6 +19,7 @@ class InstallmentController:
     def __init__(self):
         self.db = DatabaseConnection()
         self.queries = InstallmentQueries(self.db)
+        self.payment_queries = PaymentQueries(self.db)
     
     def add_installment(self, person_id: int, total_amount: float,
                        frequency: str, description: str, start_date: Optional[date] = None) -> tuple[bool, str, Optional[int]]:
@@ -126,13 +127,14 @@ class InstallmentController:
         else:
             return False, "حدث خطأ أثناء تحديث القسط"
     
-    def add_payment(self, installment_id: int, payment_amount: float) -> tuple[bool, str]:
+    def add_payment(self, installment_id: int, payment_amount: float, payment_date: Optional[date] = None) -> tuple[bool, str]:
         """
         إضافة دفعة للقسط
         
         Args:
             installment_id: معرف القسط
             payment_amount: مبلغ الدفعة
+            payment_date: تاريخ الدفعة
             
         Returns:
             tuple: (نجح, رسالة)
@@ -148,7 +150,19 @@ class InstallmentController:
         
         if new_paid_amount > existing_installment.total_amount:
             return False, "مبلغ الدفعة يتجاوز المبلغ المتبقي"
+            
+        # إضافة الدفعة إلى جدول الدفعات
+        payment = Payment(
+            installment_id=installment_id,
+            amount=payment_amount,
+            payment_date=payment_date if payment_date else date.today()
+        )
+        payment_id = self.payment_queries.create_payment(payment)
         
+        if not payment_id:
+            return False, "فشل تسجيل الدفعة"
+
+        # تحديث القسط
         return self.update_installment(
             installment_id, existing_installment.total_amount,
             existing_installment.frequency,

@@ -111,6 +111,18 @@ class DatabaseConnection:
             )
         """)
         
+        # جدول الدفعات
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS payments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                installment_id INTEGER NOT NULL,
+                amount REAL NOT NULL,
+                payment_date DATE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (installment_id) REFERENCES installments (id) ON DELETE CASCADE
+            )
+        """)
+        
         conn.commit()
     
     def execute_query(self, query: str, params: tuple = None):

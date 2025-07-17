@@ -100,3 +100,15 @@ class InternetSubscription:
     def __str__(self):
         status = "نشط" if self.is_active else "غير نشط"
         return f"{self.plan_name} - {self.speed} - {status}"
+
+
+@dataclass
+class Payment:
+    """
+    نموذج الدفعة
+    """
+    id: Optional[int] = None
+    installment_id: int = 0
+    amount: float = 0.0
+    payment_date: Optional[date] = None
+    created_at: Optional[datetime] = None
