@@ -11,7 +11,7 @@ from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont
 from controllers.internet_controller import InternetController
 from controllers.person_controller import PersonController
-from database.models import Internet
+from database.models import InternetSubscription
 from utils.helpers import MessageHelper, AppHelper, TableHelper, DateHelper, NumberHelper
 from views.dialogs.add_internet_dialog import AddInternetDialog
 
@@ -25,7 +25,7 @@ class InternetView(QMainWindow):
         super().__init__()
         self.internet_controller = InternetController()
         self.person_controller = PersonController()
-        self.selected_internet = None
+        self.selected_subscription = None
         self.auto_refresh_timer = QTimer()
         self.init_ui()
         self.setup_connections()
@@ -329,7 +329,7 @@ class InternetView(QMainWindow):
         تحميل قائمة اشتراكات الإنترنت
         """
         try:
-            subscriptions = self.internet_controller.get_all_internet_subscriptions()
+            subscriptions = self.internet_controller.get_all_subscriptions()
             self.all_subscriptions = subscriptions  # حفظ النسخة الأصلية للفلترة
             self.populate_table(subscriptions)
             self.update_statistics()
@@ -358,7 +358,7 @@ class InternetView(QMainWindow):
             self.table.setItem(row, 2, speed_item)
             
             # التكلفة الشهرية
-            cost_item = QTableWidgetItem(NumberHelper.format_currency(subscription.monthly_cost))
+            cost_item = QTableWidgetItem(NumberHelper.format_currency(subscription.monthly_fee))
             cost_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
             self.table.setItem(row, 3, cost_item)
             
@@ -441,7 +441,7 @@ class InternetView(QMainWindow):
                 if not (search_term in subscription.description.lower() or
                        search_term in subscription.person_name.lower() or
                        search_term in str(subscription.speed) or
-                       search_term in str(subscription.monthly_cost)):
+                       search_term in str(subscription.monthly_fee)):
                     continue
             
             # فلترة الحالة
@@ -470,7 +470,7 @@ class InternetView(QMainWindow):
         تحديث الإحصائيات
         """
         try:
-            stats = self.internet_controller.get_internet_statistics()
+            stats = self.internet_controller.get_subscription_statistics()
             
             self.total_subscriptions_label.setText(f"إجمالي الاشتراكات: {stats['total_subscriptions_count']}")
             self.active_subscriptions_label.setText(f"نشط: {stats['active_subscriptions_count']}")
@@ -496,20 +496,20 @@ class InternetView(QMainWindow):
             # الحصول على الاشتراك المحدد
             id_item = self.table.item(current_row, 0)
             if id_item:
-                self.selected_internet = id_item.data(Qt.UserRole)
+                self.selected_subscription = id_item.data(Qt.UserRole)
                 # تفعيل/تعطيل أزرار التفعيل والإيقاف
                 self.activate_btn.setEnabled(
-                    self.selected_internet and not self.selected_internet.is_active
+                    self.selected_subscription and not self.selected_subscription.is_active
                 )
                 self.deactivate_btn.setEnabled(
-                    self.selected_internet and self.selected_internet.is_active
+                    self.selected_subscription and self.selected_subscription.is_active
                 )
             else:
-                self.selected_internet = None
+                self.selected_subscription = None
                 self.activate_btn.setEnabled(False)
                 self.deactivate_btn.setEnabled(False)
         else:
-            self.selected_internet = None
+            self.selected_subscription = None
             self.activate_btn.setEnabled(False)
             self.deactivate_btn.setEnabled(False)
     
@@ -530,11 +530,11 @@ class InternetView(QMainWindow):
             if persons:
                 person_id = persons[0].id  # مؤقت - يختار أول زبون
                 
-                success, message, internet_id = self.internet_controller.add_internet_subscription(
+                success, message, internet_id = self.internet_controller.add_subscription(
                     person_id,
+                    internet_data['plan_name'],
+                    internet_data['monthly_fee'],
                     internet_data['speed'],
-                    internet_data['monthly_cost'],
-                    internet_data['description'],
                     internet_data['start_date'],
                     internet_data['end_date']
                 )
@@ -549,20 +549,21 @@ class InternetView(QMainWindow):
         """
         تعديل اشتراك إنترنت
         """
-        if not self.selected_internet:
+        if not self.selected_subscription:
             return
         
-        dialog = AddInternetDialog(self, self.selected_internet)
+        dialog = AddInternetDialog(self, self.selected_subscription)
         if dialog.exec_() == dialog.Accepted:
             internet_data = dialog.get_internet_data()
             
-            success, message = self.internet_controller.update_internet_subscription(
-                self.selected_internet.id,
+            success, message = self.internet_controller.update_subscription(
+                self.selected_subscription.id,
+                internet_data['plan_name'],
+                internet_data['monthly_fee'],
                 internet_data['speed'],
-                internet_data['monthly_cost'],
-                internet_data['description'],
                 internet_data['start_date'],
-                internet_data['end_date']
+                internet_data['end_date'],
+                self.selected_subscription.is_active
             )
             
             if success:
@@ -575,19 +576,19 @@ class InternetView(QMainWindow):
         """
         حذف اشتراك إنترنت
         """
-        if not self.selected_internet:
+        if not self.selected_subscription:
             return
         
         reply = MessageHelper.show_question(
             self, "تأكيد الحذف",
             f"هل أنت متأكد من حذف هذا الاشتراك؟\n"
-            f"الوصف: {self.selected_internet.description}\n"
-            f"السرعة: {self.selected_internet.speed} ميجا\n"
-            f"التكلفة: {NumberHelper.format_currency(self.selected_internet.monthly_cost)}"
+            f"الوصف: {self.selected_subscription.description}\n"
+            f"السرعة: {self.selected_subscription.speed} ميجا\n"
+            f"التكلفة: {NumberHelper.format_currency(self.selected_subscription.monthly_fee)}"
         )
         
         if reply:
-            success, message = self.internet_controller.delete_internet_subscription(self.selected_internet.id)
+            success, message = self.internet_controller.delete_subscription(self.selected_subscription.id)
             
             if success:
                 MessageHelper.show_info(self, "نجح", message)
@@ -599,10 +600,10 @@ class InternetView(QMainWindow):
         """
         تفعيل اشتراك الإنترنت
         """
-        if not self.selected_internet or self.selected_internet.is_active:
+        if not self.selected_subscription or self.selected_subscription.is_active:
             return
         
-        success, message = self.internet_controller.activate_subscription(self.selected_internet.id)
+        success, message = self.internet_controller.activate_subscription(self.selected_subscription.id)
         
         if success:
             MessageHelper.show_info(self, "نجح", message)
@@ -614,18 +615,18 @@ class InternetView(QMainWindow):
         """
         إيقاف اشتراك الإنترنت
         """
-        if not self.selected_internet or not self.selected_internet.is_active:
+        if not self.selected_subscription or not self.selected_subscription.is_active:
             return
         
         reply = MessageHelper.show_question(
             self, "تأكيد الإيقاف",
             f"هل أنت متأكد من إيقاف هذا الاشتراك؟\n"
-            f"الوصف: {self.selected_internet.description}\n"
+            f"الوصف: {self.selected_subscription.description}\n"
             f"سيتم إيقاف الخدمة فوراً."
         )
         
         if reply:
-            success, message = self.internet_controller.deactivate_subscription(self.selected_internet.id)
+            success, message = self.internet_controller.deactivate_subscription(self.selected_subscription.id)
             
             if success:
                 MessageHelper.show_info(self, "نجح", message)

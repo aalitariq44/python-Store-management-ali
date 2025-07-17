@@ -681,3 +681,252 @@ class PersonDetailsView(QMainWindow):
                 self.update_stats()
             else:
                 MessageHelper.show_error(self, "خطأ", message)
+
+    def edit_debt(self):
+        """
+        تعديل الدين المحدد
+        """
+        current_row = self.debts_table.currentRow()
+        if current_row < 0:
+            return
+            
+        debt_item = self.debts_table.item(current_row, 0)
+        debt = debt_item.data(Qt.UserRole)
+        
+        dialog = AddDebtDialog(self, person_id=self.person.id, debt=debt)
+        if dialog.exec_() == dialog.Accepted:
+            debt_data = dialog.get_debt_data()
+            
+            success, message = self.debt_controller.update_debt(
+                debt.id,
+                debt_data['amount'],
+                debt_data['description'],
+                debt_data['due_date']
+            )
+            
+            if success:
+                MessageHelper.show_info(self, "نجح", message)
+                self.load_debts()
+                self.update_stats()
+            else:
+                MessageHelper.show_error(self, "خطأ", message)
+
+    def delete_debt(self):
+        """
+        حذف الدين المحدد
+        """
+        current_row = self.debts_table.currentRow()
+        if current_row < 0:
+            return
+            
+        debt_item = self.debts_table.item(current_row, 0)
+        debt = debt_item.data(Qt.UserRole)
+        
+        if MessageHelper.confirm(self, "تأكيد", f"هل أنت متأكد من حذف الدين '{debt.description}'؟"):
+            success, message = self.debt_controller.delete_debt(debt.id)
+            
+            if success:
+                MessageHelper.show_info(self, "نجح", message)
+                self.load_debts()
+                self.update_stats()
+            else:
+                MessageHelper.show_error(self, "خطأ", message)
+
+    def mark_debt_paid(self):
+        """
+        وضع علامة مدفوع على الدين المحدد
+        """
+        current_row = self.debts_table.currentRow()
+        if current_row < 0:
+            return
+            
+        debt_item = self.debts_table.item(current_row, 0)
+        debt = debt_item.data(Qt.UserRole)
+        
+        if MessageHelper.confirm(self, "تأكيد", f"هل أنت متأكد من وضع علامة 'مدفوع' على الدين '{debt.description}'؟"):
+            success, message = self.debt_controller.mark_debt_as_paid(debt.id)
+            
+            if success:
+                MessageHelper.show_info(self, "نجح", message)
+                self.load_debts()
+                self.update_stats()
+            else:
+                MessageHelper.show_error(self, "خطأ", message)
+
+    def add_installment(self):
+        """
+        إضافة قسط جديد
+        """
+        dialog = AddInstallmentDialog(self, person_id=self.person.id)
+        if dialog.exec_() == dialog.Accepted:
+            data = dialog.get_installment_data()
+            
+            success, message, _ = self.installment_controller.add_installment(
+                self.person.id,
+                data['total_amount'],
+                data['installment_amount'],
+                data['frequency'],
+                data['description']
+            )
+            
+            if success:
+                MessageHelper.show_info(self, "نجح", message)
+                self.load_installments()
+                self.update_stats()
+            else:
+                MessageHelper.show_error(self, "خطأ", message)
+
+    def edit_installment(self):
+        """
+        تعديل القسط المحدد
+        """
+        current_row = self.installments_table.currentRow()
+        if current_row < 0:
+            return
+            
+        item = self.installments_table.item(current_row, 0)
+        installment = item.data(Qt.UserRole)
+        
+        dialog = AddInstallmentDialog(self, person_id=self.person.id, installment=installment)
+        if dialog.exec_() == dialog.Accepted:
+            data = dialog.get_installment_data()
+            
+            success, message = self.installment_controller.update_installment(
+                installment.id,
+                data['total_amount'],
+                data['installment_amount'],
+                data['frequency'],
+                data['description']
+            )
+            
+            if success:
+                MessageHelper.show_info(self, "نجح", message)
+                self.load_installments()
+                self.update_stats()
+            else:
+                MessageHelper.show_error(self, "خطأ", message)
+
+    def delete_installment(self):
+        """
+        حذف القسط المحدد
+        """
+        current_row = self.installments_table.currentRow()
+        if current_row < 0:
+            return
+            
+        item = self.installments_table.item(current_row, 0)
+        installment = item.data(Qt.UserRole)
+        
+        if MessageHelper.confirm(self, "تأكيد", f"هل أنت متأكد من حذف القسط '{installment.description}'؟"):
+            success, message = self.installment_controller.delete_installment(installment.id)
+            
+            if success:
+                MessageHelper.show_info(self, "نجح", message)
+                self.load_installments()
+                self.update_stats()
+            else:
+                MessageHelper.show_error(self, "خطأ", message)
+
+    def add_installment_payment(self):
+        # هذه الوظيفة تتطلب نافذة جديدة لإضافة دفعة، سيتم تبسيطها حاليًا
+        MessageHelper.show_info(self, "غير متاح", "وظيفة إضافة دفعة غير متاحة حاليًا.")
+
+    def add_internet_subscription(self):
+        """
+        إضافة اشتراك إنترنت جديد
+        """
+        dialog = AddInternetDialog(self, person_id=self.person.id)
+        if dialog.exec_() == dialog.Accepted:
+            data = dialog.get_data()
+            
+            success, message, _ = self.internet_controller.add_subscription(
+                self.person.id,
+                data['plan_name'],
+                data['monthly_fee'],
+                data['start_date'],
+                data['speed'],
+                data['end_date']
+            )
+            
+            if success:
+                MessageHelper.show_info(self, "نجح", message)
+                self.load_internet_subscriptions()
+                self.update_stats()
+            else:
+                MessageHelper.show_error(self, "خطأ", message)
+
+    def edit_internet_subscription(self):
+        """
+        تعديل اشتراك الإنترنت المحدد
+        """
+        current_row = self.internet_table.currentRow()
+        if current_row < 0:
+            return
+            
+        item = self.internet_table.item(current_row, 0)
+        subscription = item.data(Qt.UserRole)
+        
+        dialog = AddInternetDialog(self, person_id=self.person.id, subscription=subscription)
+        if dialog.exec_() == dialog.Accepted:
+            data = dialog.get_data()
+            
+            success, message = self.internet_controller.update_subscription(
+                subscription.id,
+                data['plan_name'],
+                data['monthly_fee'],
+                data['start_date'],
+                data['speed'],
+                data['end_date']
+            )
+            
+            if success:
+                MessageHelper.show_info(self, "نجح", message)
+                self.load_internet_subscriptions()
+                self.update_stats()
+            else:
+                MessageHelper.show_error(self, "خطأ", message)
+
+    def delete_internet_subscription(self):
+        """
+        حذف اشتراك الإنترنت المحدد
+        """
+        current_row = self.internet_table.currentRow()
+        if current_row < 0:
+            return
+            
+        item = self.internet_table.item(current_row, 0)
+        subscription = item.data(Qt.UserRole)
+        
+        if MessageHelper.confirm(self, "تأكيد", f"هل أنت متأكد من حذف الاشتراك '{subscription.plan_name}'؟"):
+            success, message = self.internet_controller.delete_subscription(subscription.id)
+            
+            if success:
+                MessageHelper.show_info(self, "نجح", message)
+                self.load_internet_subscriptions()
+                self.update_stats()
+            else:
+                MessageHelper.show_error(self, "خطأ", message)
+
+    def toggle_internet_subscription(self):
+        """
+        تفعيل أو إلغاء تفعيل اشتراك الإنترنت
+        """
+        current_row = self.internet_table.currentRow()
+        if current_row < 0:
+            return
+            
+        item = self.internet_table.item(current_row, 0)
+        subscription = item.data(Qt.UserRole)
+        
+        new_status = not subscription.is_active
+        action_text = "تفعيل" if new_status else "إلغاء تفعيل"
+        
+        if MessageHelper.confirm(self, "تأكيد", f"هل أنت متأكد من {action_text} الاشتراك '{subscription.plan_name}'؟"):
+            success, message = self.internet_controller.toggle_subscription_status(subscription.id)
+            
+            if success:
+                MessageHelper.show_info(self, "نجح", message)
+                self.load_internet_subscriptions()
+                self.update_stats()
+            else:
+                MessageHelper.show_error(self, "خطأ", message)

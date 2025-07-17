@@ -485,8 +485,9 @@ class PersonsView(QMainWindow):
         
         try:
             from views.person_details_view import PersonDetailsView
-            details_window = PersonDetailsView(self.selected_person)
-            details_window.person_updated.connect(self.load_persons)  # تحديث البيانات عند التعديل
-            details_window.show()
+            # تخزين النافذة كعضو في الكلاس لمنعها من الحذف
+            self.details_window = PersonDetailsView(self.selected_person)
+            self.details_window.person_updated.connect(self.load_persons)  # تحديث البيانات عند التعديل
+            self.details_window.show()
         except Exception as e:
             MessageHelper.show_error(self, "خطأ", f"حدث خطأ في فتح نافذة التفاصيل: {str(e)}")

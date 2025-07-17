@@ -34,7 +34,7 @@ class AddInternetDialog(QDialog):
         """
         title = "تعديل اشتراك إنترنت" if self.subscription else "إضافة اشتراك إنترنت جديد"
         self.setWindowTitle(title)
-        self.setFixedSize(500, 500)
+        self.setMinimumSize(600, 600)
         self.setModal(True)
         
         main_layout = QVBoxLayout(self)
@@ -50,26 +50,14 @@ class AddInternetDialog(QDialog):
         إضافة عنوان النافذة
         """
         title_frame = QFrame()
-        title_frame.setStyleSheet("""
-            QFrame {
-                background-color: #27ae60;
-                border-radius: 8px;
-                padding: 15px;
-            }
-        """)
+        title_frame.setObjectName("title-frame")
+        title_frame.setStyleSheet("background-color: #27ae60;") # Custom green
         
         title_layout = QVBoxLayout(title_frame)
         
         title_label = QLabel(title)
         title_label.setAlignment(Qt.AlignCenter)
-        title_label.setStyleSheet("""
-            QLabel {
-                color: white;
-                font-size: 18px;
-                font-weight: bold;
-                background: transparent;
-            }
-        """)
+
         title_layout.addWidget(title_label)
         
         layout.addWidget(title_frame)
@@ -79,14 +67,7 @@ class AddInternetDialog(QDialog):
         إضافة نموذج الإدخال
         """
         form_frame = QFrame()
-        form_frame.setStyleSheet("""
-            QFrame {
-                background-color: #f8f9fa;
-                border: 1px solid #dee2e6;
-                border-radius: 8px;
-                padding: 20px;
-            }
-        """)
+        # Remove inline style
         
         form_layout = QFormLayout(form_frame)
         form_layout.setSpacing(15)
@@ -94,7 +75,6 @@ class AddInternetDialog(QDialog):
         # اسم الباقة
         self.plan_name_input = QLineEdit()
         self.plan_name_input.setPlaceholderText("مثال: باقة الذهبية")
-        self.style_input(self.plan_name_input)
         form_layout.addRow("اسم الباقة: *", self.plan_name_input)
         
         # الرسوم الشهرية
@@ -102,13 +82,11 @@ class AddInternetDialog(QDialog):
         self.monthly_fee_input.setRange(0.00, 999999.99)
         self.monthly_fee_input.setDecimals(2)
         self.monthly_fee_input.setSuffix(" ر.س")
-        self.style_input(self.monthly_fee_input)
         form_layout.addRow("الرسوم الشهرية:", self.monthly_fee_input)
         
         # السرعة
         self.speed_input = QLineEdit()
         self.speed_input.setPlaceholderText("مثال: 100 Mbps")
-        self.style_input(self.speed_input)
         form_layout.addRow("السرعة:", self.speed_input)
         
         # تاريخ البداية
@@ -116,7 +94,6 @@ class AddInternetDialog(QDialog):
         self.start_date_input.setDate(QDate.currentDate())
         self.start_date_input.setCalendarPopup(True)
         self.start_date_input.setDisplayFormat("yyyy-MM-dd")
-        self.style_input(self.start_date_input)
         form_layout.addRow("تاريخ البداية:", self.start_date_input)
         
         # تاريخ النهاية
@@ -124,54 +101,19 @@ class AddInternetDialog(QDialog):
         self.end_date_input.setDate(QDate.currentDate().addYears(1))
         self.end_date_input.setCalendarPopup(True)
         self.end_date_input.setDisplayFormat("yyyy-MM-dd")
-        self.style_input(self.end_date_input)
         form_layout.addRow("تاريخ النهاية:", self.end_date_input)
         
         # حالة النشاط
         self.is_active_checkbox = QCheckBox("نشط")
         self.is_active_checkbox.setChecked(True)  # افتراضي نشط
-        self.is_active_checkbox.setStyleSheet("""
-            QCheckBox {
-                font-size: 12px;
-                font-weight: bold;
-            }
-            QCheckBox::indicator {
-                width: 18px;
-                height: 18px;
-            }
-        """)
         form_layout.addRow("", self.is_active_checkbox)
         
         # ملاحظة الحقول المطلوبة
         note_label = QLabel("* الحقول المطلوبة")
-        note_label.setStyleSheet("""
-            QLabel {
-                color: #dc3545;
-                font-size: 11px;
-                font-style: italic;
-            }
-        """)
+        note_label.setObjectName("error-label")
         form_layout.addRow("", note_label)
         
         layout.addWidget(form_frame)
-    
-    def style_input(self, widget):
-        """
-        تنسيق حقل الإدخال
-        """
-        widget.setStyleSheet("""
-            QLineEdit, QTextEdit, QDoubleSpinBox, QDateEdit {
-                padding: 8px 12px;
-                border: 2px solid #ced4da;
-                border-radius: 5px;
-                font-size: 12px;
-                background-color: white;
-            }
-            QLineEdit:focus, QTextEdit:focus, QDoubleSpinBox:focus, QDateEdit:focus {
-                border-color: #27ae60;
-                outline: none;
-            }
-        """)
     
     def add_buttons(self, layout: QVBoxLayout):
         """
@@ -183,38 +125,10 @@ class AddInternetDialog(QDialog):
         
         save_text = "تحديث" if self.subscription else "حفظ"
         self.save_btn = QPushButton(save_text)
-        self.save_btn.setMinimumHeight(40)
-        self.save_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #28a745;
-                color: white;
-                border: none;
-                border-radius: 5px;
-                font-size: 14px;
-                font-weight: bold;
-                padding: 10px 20px;
-            }
-            QPushButton:hover {
-                background-color: #218838;
-            }
-        """)
+        self.save_btn.setObjectName("edit-button")
         
         self.cancel_btn = QPushButton("إلغاء")
-        self.cancel_btn.setMinimumHeight(40)
-        self.cancel_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #6c757d;
-                color: white;
-                border: none;
-                border-radius: 5px;
-                font-size: 14px;
-                font-weight: bold;
-                padding: 10px 20px;
-            }
-            QPushButton:hover {
-                background-color: #545b62;
-            }
-        """)
+        # Default style is fine
         
         buttons_layout.addStretch()
         buttons_layout.addWidget(self.save_btn)
