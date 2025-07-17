@@ -5,10 +5,10 @@
 
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QFormLayout,
                              QLineEdit, QTextEdit, QPushButton, QLabel, QFrame,
-                             QDateEdit, QCheckBox, QDoubleSpinBox, QComboBox)
+                             QDateEdit, QDoubleSpinBox, QComboBox)
 from PyQt5.QtCore import Qt, QDate
 from PyQt5.QtGui import QFont
-from datetime import date
+from datetime import date, timedelta
 from database.models import InternetSubscription
 from utils.helpers import MessageHelper, DateHelper
 from controllers.person_controller import PersonController
@@ -99,29 +99,12 @@ class AddInternetDialog(QDialog):
         self.monthly_fee_input.setSuffix(" د.ع")
         form_layout.addRow("الرسوم الشهرية:", self.monthly_fee_input)
         
-        # السرعة
-        self.speed_input = QLineEdit()
-        self.speed_input.setPlaceholderText("مثال: 100 Mbps")
-        form_layout.addRow("السرعة:", self.speed_input)
-        
         # تاريخ البداية
         self.start_date_input = QDateEdit()
         self.start_date_input.setDate(QDate.currentDate())
         self.start_date_input.setCalendarPopup(True)
         self.start_date_input.setDisplayFormat("yyyy-MM-dd")
         form_layout.addRow("تاريخ البداية:", self.start_date_input)
-        
-        # تاريخ النهاية
-        self.end_date_input = QDateEdit()
-        self.end_date_input.setDate(QDate.currentDate().addYears(1))
-        self.end_date_input.setCalendarPopup(True)
-        self.end_date_input.setDisplayFormat("yyyy-MM-dd")
-        form_layout.addRow("تاريخ النهاية:", self.end_date_input)
-        
-        # حالة النشاط
-        self.is_active_checkbox = QCheckBox("نشط")
-        self.is_active_checkbox.setChecked(True)  # افتراضي نشط
-        form_layout.addRow("", self.is_active_checkbox)
         
         # ملاحظة الحقول المطلوبة
         note_label = QLabel("* الحقول المطلوبة")
@@ -176,36 +159,35 @@ class AddInternetDialog(QDialog):
         if self.subscription:
             self.plan_name_input.setText(self.subscription.plan_name)
             self.monthly_fee_input.setValue(self.subscription.monthly_fee)
-            self.speed_input.setText(self.subscription.speed or "")
             
             if self.subscription.start_date:
                 qdate = DateHelper.date_to_qdate(self.subscription.start_date)
                 if qdate:
                     self.start_date_input.setDate(qdate)
-            
-            if self.subscription.end_date:
-                qdate = DateHelper.date_to_qdate(self.subscription.end_date)
-                if qdate:
-                    self.end_date_input.setDate(qdate)
-            
-            self.is_active_checkbox.setChecked(self.subscription.is_active)
     
     def get_subscription_data(self) -> dict:
         """
         الحصول على بيانات الاشتراك من النموذج
         """
         start_date = DateHelper.qdate_to_date(self.start_date_input.date())
-        end_date = DateHelper.qdate_to_date(self.end_date_input.date())
+        # تاريخ النهاية يكون بعد 30 يوم من تاريخ البداية
+        end_date = start_date + timedelta(days=30) if start_date else None
         selected_person_id = self.person_combo.currentData()
         
+        # يتم تحديد حالة النشاط تلقائيًا بناءً على التواريخ
+        is_active = False
+        if start_date and end_date:
+            today = date.today()
+            is_active = start_date <= today <= end_date
+
         return {
             'person_id': selected_person_id,
             'plan_name': self.plan_name_input.text().strip(),
             'monthly_fee': self.monthly_fee_input.value(),
-            'speed': self.speed_input.text().strip(),
+            'speed': None,  # تم حذف حقل السرعة
             'start_date': start_date,
             'end_date': end_date,
-            'is_active': self.is_active_checkbox.isChecked()
+            'is_active': is_active
         }
     
     def validate_data(self) -> tuple[bool, str]:
@@ -226,12 +208,6 @@ class AddInternetDialog(QDialog):
         
         if data['monthly_fee'] < 0:
             return False, "الرسوم الشهرية لا يمكن أن تكون سالبة"
-        
-        if data['speed'] and len(data['speed']) > 50:
-            return False, "وصف السرعة طويل جداً (أكثر من 50 حرف)"
-        
-        if data['start_date'] and data['end_date'] and data['start_date'] >= data['end_date']:
-            return False, "تاريخ البداية يجب أن يكون قبل تاريخ النهاية"
         
         return True, ""
     

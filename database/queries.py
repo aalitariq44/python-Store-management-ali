@@ -286,6 +286,36 @@ class InstallmentQueries:
                 person_name=row['person_name']
             ) for row in rows]
         return []
+
+    def get_installment_by_id(self, installment_id: int) -> Optional[Installment]:
+        """
+        الحصول على قسط بالمعرف
+        """
+        query = """
+            SELECT i.*, p.name as person_name
+            FROM installments i
+            JOIN persons p ON i.person_id = p.id
+            WHERE i.id = ?
+        """
+        rows = self.db.execute_query(query, (installment_id,))
+        
+        if rows:
+            row = rows[0]
+            return Installment(
+                id=row['id'],
+                person_id=row['person_id'],
+                total_amount=row['total_amount'],
+                paid_amount=row['paid_amount'],
+                installment_amount=row['installment_amount'],
+                frequency=row['frequency'],
+                description=row['description'],
+                start_date=date.fromisoformat(row['start_date']) if row['start_date'] else None,
+                end_date=date.fromisoformat(row['end_date']) if row['end_date'] else None,
+                is_completed=bool(row['is_completed']),
+                created_at=datetime.fromisoformat(row['created_at']) if row['created_at'] else None,
+                person_name=row['person_name']
+            )
+        return None
     
     def update_installment(self, installment: Installment) -> bool:
         """
@@ -305,6 +335,21 @@ class InstallmentQueries:
             installment.is_completed, installment.id
         ))
         return result is not None
+
+    def update_installment_amounts(self, installment_id: int):
+        """
+        تحديث المبالغ المدفوعة والمتبقية للقسط
+        """
+        # حساب مجموع الدفعات
+        payments_sum = self.db.execute_query("SELECT SUM(amount) as total FROM payments WHERE installment_id = ?", (installment_id,))[0]['total'] or 0
+        
+        # الحصول على المبلغ الإجمالي للقسط
+        installment_total = self.db.execute_query("SELECT total_amount FROM installments WHERE id = ?", (installment_id,))[0]['total_amount']
+        
+        # تحديث القسط
+        is_completed = payments_sum >= installment_total
+        query = "UPDATE installments SET paid_amount = ?, is_completed = ? WHERE id = ?"
+        self.db.execute_query(query, (payments_sum, is_completed, installment_id))
     
     def delete_installment(self, installment_id: int) -> bool:
         """
@@ -328,13 +373,12 @@ class InternetSubscriptionQueries:
         إضافة اشتراك جديد
         """
         query = """
-            INSERT INTO internet_subscriptions (person_id, plan_name, monthly_fee, speed, 
+            INSERT INTO internet_subscriptions (person_id, plan_name, monthly_fee, 
                                                start_date, end_date, is_active)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?)
         """
         return self.db.execute_insert(query, (
             subscription.person_id, subscription.plan_name, subscription.monthly_fee,
-            subscription.speed,
             subscription.start_date.isoformat() if subscription.start_date else None,
             subscription.end_date.isoformat() if subscription.end_date else None,
             subscription.is_active
@@ -345,7 +389,7 @@ class InternetSubscriptionQueries:
         الحصول على جميع الاشتراكات مع أسماء الزبائن
         """
         query = """
-            SELECT s.*, p.name as person_name
+            SELECT s.id, s.person_id, s.plan_name, s.monthly_fee, s.start_date, s.end_date, s.is_active, s.created_at, s.updated_at, p.name as person_name
             FROM internet_subscriptions s
             JOIN persons p ON s.person_id = p.id
             ORDER BY s.created_at DESC
@@ -358,11 +402,11 @@ class InternetSubscriptionQueries:
                 person_id=row['person_id'],
                 plan_name=row['plan_name'],
                 monthly_fee=row['monthly_fee'],
-                speed=row['speed'],
                 start_date=date.fromisoformat(row['start_date']) if row['start_date'] else None,
                 end_date=date.fromisoformat(row['end_date']) if row['end_date'] else None,
                 is_active=bool(row['is_active']),
                 created_at=datetime.fromisoformat(row['created_at']) if row['created_at'] else None,
+                updated_at=datetime.fromisoformat(row['updated_at']) if row['updated_at'] else None,
                 person_name=row['person_name']
             ) for row in rows]
         return []
@@ -372,7 +416,7 @@ class InternetSubscriptionQueries:
         الحصول على اشتراكات زبون معين
         """
         query = """
-            SELECT s.*, p.name as person_name
+            SELECT s.id, s.person_id, s.plan_name, s.monthly_fee, s.start_date, s.end_date, s.is_active, s.created_at, s.updated_at, p.name as person_name
             FROM internet_subscriptions s
             JOIN persons p ON s.person_id = p.id
             WHERE s.person_id = ?
@@ -386,11 +430,11 @@ class InternetSubscriptionQueries:
                 person_id=row['person_id'],
                 plan_name=row['plan_name'],
                 monthly_fee=row['monthly_fee'],
-                speed=row['speed'],
                 start_date=date.fromisoformat(row['start_date']) if row['start_date'] else None,
                 end_date=date.fromisoformat(row['end_date']) if row['end_date'] else None,
                 is_active=bool(row['is_active']),
                 created_at=datetime.fromisoformat(row['created_at']) if row['created_at'] else None,
+                updated_at=datetime.fromisoformat(row['updated_at']) if row['updated_at'] else None,
                 person_name=row['person_name']
             ) for row in rows]
         return []
@@ -401,12 +445,12 @@ class InternetSubscriptionQueries:
         """
         query = """
             UPDATE internet_subscriptions 
-            SET plan_name = ?, monthly_fee = ?, speed = ?, 
+            SET plan_name = ?, monthly_fee = ?, 
                 start_date = ?, end_date = ?, is_active = ?
             WHERE id = ?
         """
         result = self.db.execute_query(query, (
-            subscription.plan_name, subscription.monthly_fee, subscription.speed,
+            subscription.plan_name, subscription.monthly_fee,
             subscription.start_date.isoformat() if subscription.start_date else None,
             subscription.end_date.isoformat() if subscription.end_date else None,
             subscription.is_active, subscription.id
@@ -438,10 +482,13 @@ class PaymentQueries:
             INSERT INTO payments (installment_id, amount, payment_date)
             VALUES (?, ?, ?)
         """
-        return self.db.execute_insert(query, (
+        payment_id = self.db.execute_insert(query, (
             payment.installment_id, payment.amount,
             payment.payment_date.isoformat() if payment.payment_date else None
         ))
+        if payment_id:
+            InstallmentQueries(self.db).update_installment_amounts(payment.installment_id)
+        return payment_id
 
     def get_payments_by_installment(self, installment_id: int) -> List[Payment]:
         """
@@ -464,10 +511,34 @@ class PaymentQueries:
             ) for row in rows]
         return []
 
+    def get_payment_by_id(self, payment_id: int) -> Optional[Payment]:
+        """
+        الحصول على دفعة بالمعرف
+        """
+        query = "SELECT * FROM payments WHERE id = ?"
+        rows = self.db.execute_query(query, (payment_id,))
+        if rows:
+            row = rows[0]
+            return Payment(
+                id=row['id'],
+                installment_id=row['installment_id'],
+                amount=row['amount'],
+                payment_date=date.fromisoformat(row['payment_date']) if row['payment_date'] else None,
+                created_at=datetime.fromisoformat(row['created_at']) if row['created_at'] else None
+            )
+        return None
+
     def delete_payment(self, payment_id: int) -> bool:
         """
         حذف دفعة
         """
+        payment = self.get_payment_by_id(payment_id)
+        if not payment:
+            return False
+
         query = "DELETE FROM payments WHERE id = ?"
         result = self.db.execute_query(query, (payment_id,))
-        return result is not None
+        if result is not None:
+            InstallmentQueries(self.db).update_installment_amounts(payment.installment_id)
+            return True
+        return False

@@ -90,16 +90,16 @@ class InternetSubscription:
     person_id: int = 0
     plan_name: str = ""
     monthly_fee: float = 0.0
-    speed: str = ""
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     is_active: bool = True
     created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     person_name: str = ""  # للعرض في القوائم العامة
     
     def __str__(self):
         status = "نشط" if self.is_active else "غير نشط"
-        return f"{self.plan_name} - {self.speed} - {status}"
+        return f"{self.plan_name} - {status}"
 
 
 @dataclass

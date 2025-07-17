@@ -107,6 +107,7 @@ class DatabaseConnection:
                 end_date DATE,
                 is_active BOOLEAN DEFAULT TRUE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (person_id) REFERENCES persons (id) ON DELETE CASCADE
             )
         """)
@@ -124,7 +125,28 @@ class DatabaseConnection:
         """)
         
         conn.commit()
-    
+        self._migrate_schema(conn)
+
+    def _migrate_schema(self, conn: sqlite3.Connection):
+        """
+        تطبيق التغييرات على مخطط قاعدة البيانات الموجودة لضمان التوافق.
+        """
+        cursor = conn.cursor()
+        
+        # التحقق من وجود عمود 'updated_at' في جدول 'internet_subscriptions'
+        try:
+            cursor.execute("PRAGMA table_info(internet_subscriptions)")
+            columns = [row['name'] for row in cursor.fetchall()]
+            
+            if 'updated_at' not in columns:
+                cursor.execute("ALTER TABLE internet_subscriptions ADD COLUMN updated_at TIMESTAMP")
+                cursor.execute("UPDATE internet_subscriptions SET updated_at = created_at WHERE updated_at IS NULL")
+                conn.commit()
+                print("Migration successful: 'updated_at' column added to 'internet_subscriptions'.")
+        except sqlite3.Error as e:
+            print(f"Migration check failed for 'internet_subscriptions': {e}")
+            conn.rollback()
+
     def execute_query(self, query: str, params: tuple = None):
         """
         تنفيذ استعلام SQL

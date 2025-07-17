@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                              QLabel, QHeaderView, QFrame, QComboBox, QCheckBox)
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont
+from datetime import date
 from controllers.internet_controller import InternetController
 from controllers.person_controller import PersonController
 from database.models import InternetSubscription
@@ -89,7 +90,7 @@ class InternetView(QMainWindow):
         """)
         title_layout.addWidget(title_label)
         
-        subtitle_label = QLabel("عرض وإدارة جميع اشتراكات الإنترنت مع معلومات السرعة والباقات")
+        subtitle_label = QLabel("عرض وإدارة جميع اشتراكات الإنترنت والباقات")
         subtitle_label.setAlignment(Qt.AlignCenter)
         subtitle_label.setStyleSheet("""
             QLabel {
@@ -112,20 +113,14 @@ class InternetView(QMainWindow):
         # شريط البحث
         search_label = QLabel("البحث:")
         self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("ابحث في الوصف أو اسم الزبون أو السرعة...")
+        self.search_input.setPlaceholderText("ابحث باسم الباقة أو اسم الزبون...")
         self.search_input.setMaximumWidth(300)
         
         # فلتر الحالة
         status_label = QLabel("الحالة:")
         self.status_filter = QComboBox()
-        self.status_filter.addItems(["الكل", "نشط", "منتهي الصلاحية", "معطل"])
+        self.status_filter.addItems(["الكل", "نشط", "منتهي"])
         self.status_filter.setMaximumWidth(120)
-        
-        # فلتر السرعة
-        speed_label = QLabel("السرعة:")
-        self.speed_filter = QComboBox()
-        self.speed_filter.addItems(["الكل", "1 ميجا", "2 ميجا", "5 ميجا", "10 ميجا", "20 ميجا"])
-        self.speed_filter.setMaximumWidth(120)
         
         # خيار التحديث التلقائي
         self.auto_refresh_checkbox = QCheckBox("التحديث التلقائي (30 ثانية)")
@@ -135,13 +130,10 @@ class InternetView(QMainWindow):
         self.add_btn = QPushButton("إضافة اشتراك")
         self.edit_btn = QPushButton("تعديل")
         self.delete_btn = QPushButton("حذف")
-        self.activate_btn = QPushButton("تفعيل")
-        self.deactivate_btn = QPushButton("إيقاف")
         self.refresh_btn = QPushButton("تحديث")
         
         # تنسيق الأزرار
-        buttons = [self.add_btn, self.edit_btn, self.delete_btn, 
-                  self.activate_btn, self.deactivate_btn, self.refresh_btn]
+        buttons = [self.add_btn, self.edit_btn, self.delete_btn, self.refresh_btn]
         for btn in buttons:
             btn.setMinimumHeight(35)
             btn.setStyleSheet("""
@@ -164,29 +156,21 @@ class InternetView(QMainWindow):
         # تلوين أزرار خاصة
         self.edit_btn.setStyleSheet(self.edit_btn.styleSheet().replace("#6c5ce7", "#28a745").replace("#5a4fcf", "#218838"))
         self.delete_btn.setStyleSheet(self.delete_btn.styleSheet().replace("#6c5ce7", "#dc3545").replace("#5a4fcf", "#c82333"))
-        self.activate_btn.setStyleSheet(self.activate_btn.styleSheet().replace("#6c5ce7", "#17a2b8").replace("#5a4fcf", "#138496"))
-        self.deactivate_btn.setStyleSheet(self.deactivate_btn.styleSheet().replace("#6c5ce7", "#fd7e14").replace("#5a4fcf", "#e8630a"))
         
         # تعطيل الأزرار في البداية
         self.edit_btn.setEnabled(False)
         self.delete_btn.setEnabled(False)
-        self.activate_btn.setEnabled(False)
-        self.deactivate_btn.setEnabled(False)
         
         # ترتيب العناصر
         toolbar_layout.addWidget(search_label)
         toolbar_layout.addWidget(self.search_input)
         toolbar_layout.addWidget(status_label)
         toolbar_layout.addWidget(self.status_filter)
-        toolbar_layout.addWidget(speed_label)
-        toolbar_layout.addWidget(self.speed_filter)
         toolbar_layout.addWidget(self.auto_refresh_checkbox)
         toolbar_layout.addStretch()
         toolbar_layout.addWidget(self.add_btn)
         toolbar_layout.addWidget(self.edit_btn)
         toolbar_layout.addWidget(self.delete_btn)
-        toolbar_layout.addWidget(self.activate_btn)
-        toolbar_layout.addWidget(self.deactivate_btn)
         toolbar_layout.addWidget(self.refresh_btn)
         
         layout.addWidget(toolbar_frame)
@@ -213,7 +197,7 @@ class InternetView(QMainWindow):
         
         # الجدول
         self.table = QTableWidget()
-        headers = ["المعرف", "اسم الزبون", "السرعة", "التكلفة الشهرية", "الوصف", 
+        headers = ["المعرف", "اسم الزبون", "اسم الباقة", "التكلفة الشهرية", 
                   "تاريخ البداية", "تاريخ النهاية", "الحالة", "الأيام المتبقية", "آخر تحديث"]
         TableHelper.setup_table_headers(self.table, headers)
         
@@ -260,13 +244,11 @@ class InternetView(QMainWindow):
         
         self.total_subscriptions_label = QLabel("إجمالي الاشتراكات: -")
         self.active_subscriptions_label = QLabel("نشط: -")
-        self.expired_subscriptions_label = QLabel("منتهي الصلاحية: -")
-        self.disabled_subscriptions_label = QLabel("معطل: -")
+        self.expired_subscriptions_label = QLabel("منتهي: -")
         self.total_revenue_label = QLabel("إجمالي الإيرادات: -")
         
         for label in [self.total_subscriptions_label, self.active_subscriptions_label, 
-                     self.expired_subscriptions_label, self.disabled_subscriptions_label,
-                     self.total_revenue_label]:
+                     self.expired_subscriptions_label, self.total_revenue_label]:
             label.setStyleSheet("""
                 QLabel {
                     font-weight: bold;
@@ -277,7 +259,6 @@ class InternetView(QMainWindow):
         status_layout.addWidget(self.total_subscriptions_label)
         status_layout.addWidget(self.active_subscriptions_label)
         status_layout.addWidget(self.expired_subscriptions_label)
-        status_layout.addWidget(self.disabled_subscriptions_label)
         status_layout.addWidget(self.total_revenue_label)
         status_layout.addStretch()
         
@@ -291,8 +272,6 @@ class InternetView(QMainWindow):
         self.add_btn.clicked.connect(self.add_internet_subscription)
         self.edit_btn.clicked.connect(self.edit_internet_subscription)
         self.delete_btn.clicked.connect(self.delete_internet_subscription)
-        self.activate_btn.clicked.connect(self.activate_subscription)
-        self.deactivate_btn.clicked.connect(self.deactivate_subscription)
         self.refresh_btn.clicked.connect(self.load_internet_subscriptions)
         
         # أحداث الجدول
@@ -302,7 +281,6 @@ class InternetView(QMainWindow):
         # أحداث البحث والفلترة
         self.search_input.textChanged.connect(self.filter_subscriptions)
         self.status_filter.currentTextChanged.connect(self.filter_subscriptions)
-        self.speed_filter.currentTextChanged.connect(self.filter_subscriptions)
         
         # أحداث التحديث التلقائي
         self.auto_refresh_checkbox.toggled.connect(self.toggle_auto_refresh)
@@ -351,27 +329,21 @@ class InternetView(QMainWindow):
             # اسم الزبون
             self.table.setItem(row, 1, QTableWidgetItem(subscription.person_name))
             
-            # السرعة
-            speed_text = f"{subscription.speed} ميجا"
-            speed_item = QTableWidgetItem(speed_text)
-            speed_item.setTextAlignment(Qt.AlignCenter)
-            self.table.setItem(row, 2, speed_item)
-            
+            # اسم الباقة
+            self.table.setItem(row, 2, QTableWidgetItem(subscription.plan_name))
+
             # التكلفة الشهرية
             cost_item = QTableWidgetItem(NumberHelper.format_currency(subscription.monthly_fee))
             cost_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
             self.table.setItem(row, 3, cost_item)
             
-            # الوصف
-            self.table.setItem(row, 4, QTableWidgetItem(subscription.description))
-            
             # تاريخ البداية
-            start_date = DateHelper.format_date(subscription.start_date) if subscription.start_date else "غير محدد"
-            self.table.setItem(row, 5, QTableWidgetItem(start_date))
+            start_date_str = DateHelper.format_date(subscription.start_date) if subscription.start_date else "غير محدد"
+            self.table.setItem(row, 4, QTableWidgetItem(start_date_str))
             
             # تاريخ النهاية
-            end_date = DateHelper.format_date(subscription.end_date) if subscription.end_date else "غير محدد"
-            self.table.setItem(row, 6, QTableWidgetItem(end_date))
+            end_date_str = DateHelper.format_date(subscription.end_date) if subscription.end_date else "غير محدد"
+            self.table.setItem(row, 5, QTableWidgetItem(end_date_str))
             
             # الحالة
             status_text, status_color = self.get_status_display(subscription)
@@ -379,86 +351,86 @@ class InternetView(QMainWindow):
             status_item.setTextAlignment(Qt.AlignCenter)
             status_item.setBackground(status_color)
             status_item.setForeground(Qt.white)
-            self.table.setItem(row, 7, status_item)
+            self.table.setItem(row, 6, status_item)
             
             # الأيام المتبقية
-            days_remaining = subscription.days_remaining if hasattr(subscription, 'days_remaining') else 0
-            days_item = QTableWidgetItem(str(days_remaining) if days_remaining > 0 else "انتهى")
+            days_remaining = 0
+            if subscription.end_date and isinstance(subscription.end_date, date):
+                days_remaining = (subscription.end_date - date.today()).days
+            
+            days_item = QTableWidgetItem(str(days_remaining) if days_remaining >= 0 else "منتهي")
             days_item.setTextAlignment(Qt.AlignCenter)
             
             # تلوين الأيام المتبقية
-            if days_remaining <= 0:
+            if days_remaining < 0:
                 days_item.setBackground(Qt.red)
                 days_item.setForeground(Qt.white)
             elif days_remaining <= 7:
                 days_item.setBackground(Qt.yellow)
                 days_item.setForeground(Qt.black)
-            elif days_remaining <= 30:
-                days_item.setBackground(Qt.blue)
-                days_item.setForeground(Qt.white)
             else:
                 days_item.setBackground(Qt.green)
                 days_item.setForeground(Qt.white)
-            
-            self.table.setItem(row, 8, days_item)
+
+            self.table.setItem(row, 7, days_item)
             
             # آخر تحديث
             last_updated = DateHelper.format_date(subscription.updated_at) if subscription.updated_at else "غير متوفر"
-            self.table.setItem(row, 9, QTableWidgetItem(last_updated))
+            self.table.setItem(row, 8, QTableWidgetItem(last_updated))
         
         # ضبط عرض الأعمدة
         header = self.table.horizontalHeader()
         header.setSectionResizeMode(1, QHeaderView.Stretch)  # اسم الزبون
-        header.setSectionResizeMode(4, QHeaderView.Stretch)  # الوصف
+        header.setSectionResizeMode(2, QHeaderView.Stretch)  # اسم الباقة
     
     def get_status_display(self, subscription):
         """
-        الحصول على نص ولون الحالة
+        الحصول على نص ولون الحالة بناءً على التواريخ
         """
-        if not subscription.is_active:
-            return "معطل", Qt.gray
-        elif hasattr(subscription, 'is_expired') and subscription.is_expired:
-            return "منتهي الصلاحية", Qt.red
-        else:
+        today = date.today()
+        start = subscription.start_date
+        end = subscription.end_date
+
+        if not isinstance(start, date) or not isinstance(end, date):
+            return "غير محدد", Qt.gray
+
+        if end < today:
+            return "منتهي", Qt.red
+        elif start <= today <= end:
             return "نشط", Qt.green
+        else: # start > today
+            return "لم يبدأ بعد", Qt.blue
     
     def filter_subscriptions(self):
         """
-        فلترة الاشتراكات حسب البحث والحالة والسرعة
+        فلترة الاشتراكات حسب البحث والحالة
         """
         if not hasattr(self, 'all_subscriptions'):
             return
         
         search_term = self.search_input.text().strip().lower()
         status_filter = self.status_filter.currentText()
-        speed_filter = self.speed_filter.currentText()
         
         filtered_subscriptions = []
-        
+        today = date.today()
+
         for subscription in self.all_subscriptions:
             # فلترة النص
+            plan_name = subscription.plan_name or ""
+            person_name = subscription.person_name or ""
             if search_term:
-                if not (search_term in subscription.description.lower() or
-                       search_term in subscription.person_name.lower() or
-                       search_term in str(subscription.speed) or
+                if not (search_term in plan_name.lower() or
+                       search_term in person_name.lower() or
                        search_term in str(subscription.monthly_fee)):
                     continue
             
             # فلترة الحالة
+            status_text, _ = self.get_status_display(subscription)
+
             if status_filter != "الكل":
-                if status_filter == "نشط" and (not subscription.is_active or 
-                    (hasattr(subscription, 'is_expired') and subscription.is_expired)):
+                if status_filter == "نشط" and status_text != "نشط":
                     continue
-                elif status_filter == "منتهي الصلاحية" and (not hasattr(subscription, 'is_expired') or 
-                    not subscription.is_expired):
-                    continue
-                elif status_filter == "معطل" and subscription.is_active:
-                    continue
-            
-            # فلترة السرعة
-            if speed_filter != "الكل":
-                expected_speed = speed_filter.replace(" ميجا", "")
-                if str(subscription.speed) != expected_speed:
+                elif status_filter == "منتهي" and status_text != "منتهي":
                     continue
             
             filtered_subscriptions.append(subscription)
@@ -472,11 +444,10 @@ class InternetView(QMainWindow):
         try:
             stats = self.internet_controller.get_subscription_statistics()
             
-            self.total_subscriptions_label.setText(f"إجمالي الاشتراكات: {stats['total_subscriptions_count']}")
-            self.active_subscriptions_label.setText(f"نشط: {stats['active_subscriptions_count']}")
-            self.expired_subscriptions_label.setText(f"منتهي الصلاحية: {stats['expired_subscriptions_count']}")
-            self.disabled_subscriptions_label.setText(f"معطل: {stats['disabled_subscriptions_count']}")
-            self.total_revenue_label.setText(f"إجمالي الإيرادات: {NumberHelper.format_currency(stats['total_monthly_revenue'])}")
+            self.total_subscriptions_label.setText(f"إجمالي الاشتراكات: {stats.get('total_subscriptions_count', 0)}")
+            self.active_subscriptions_label.setText(f"نشط: {stats.get('active_subscriptions_count', 0)}")
+            self.expired_subscriptions_label.setText(f"منتهي: {stats.get('expired_subscriptions_count', 0)}")
+            self.total_revenue_label.setText(f"إجمالي الإيرادات: {NumberHelper.format_currency(stats.get('total_monthly_revenue', 0))}")
             
         except Exception as e:
             print(f"خطأ في تحديث الإحصائيات: {str(e)}")
@@ -493,25 +464,13 @@ class InternetView(QMainWindow):
         self.delete_btn.setEnabled(has_selection)
         
         if has_selection:
-            # الحصول على الاشتراك المحدد
             id_item = self.table.item(current_row, 0)
             if id_item:
                 self.selected_subscription = id_item.data(Qt.UserRole)
-                # تفعيل/تعطيل أزرار التفعيل والإيقاف
-                self.activate_btn.setEnabled(
-                    self.selected_subscription and not self.selected_subscription.is_active
-                )
-                self.deactivate_btn.setEnabled(
-                    self.selected_subscription and self.selected_subscription.is_active
-                )
             else:
                 self.selected_subscription = None
-                self.activate_btn.setEnabled(False)
-                self.deactivate_btn.setEnabled(False)
         else:
             self.selected_subscription = None
-            self.activate_btn.setEnabled(False)
-            self.deactivate_btn.setEnabled(False)
     
     def add_internet_subscription(self):
         """
@@ -535,7 +494,6 @@ class InternetView(QMainWindow):
                 person_id,
                 internet_data['plan_name'],
                 internet_data['monthly_fee'],
-                internet_data['speed'],
                 internet_data['start_date'],
                 internet_data['end_date']
             )
@@ -557,14 +515,13 @@ class InternetView(QMainWindow):
         if dialog.exec_() == dialog.Accepted:
             internet_data = dialog.get_subscription_data()
             
+            # is_active is now determined by dates, so it's not passed
             success, message = self.internet_controller.update_subscription(
                 self.selected_subscription.id,
                 internet_data['plan_name'],
                 internet_data['monthly_fee'],
-                internet_data['speed'],
                 internet_data['start_date'],
-                internet_data['end_date'],
-                internet_data['is_active']
+                internet_data['end_date']
             )
             
             if success:
@@ -583,51 +540,13 @@ class InternetView(QMainWindow):
         reply = MessageHelper.show_question(
             self, "تأكيد الحذف",
             f"هل أنت متأكد من حذف هذا الاشتراك؟\n"
-            f"الوصف: {self.selected_subscription.description}\n"
-            f"السرعة: {self.selected_subscription.speed} ميجا\n"
+            f"الباقة: {self.selected_subscription.plan_name}\n"
+            f"الزبون: {self.selected_subscription.person_name}\n"
             f"التكلفة: {NumberHelper.format_currency(self.selected_subscription.monthly_fee)}"
         )
         
         if reply:
             success, message = self.internet_controller.delete_subscription(self.selected_subscription.id)
-            
-            if success:
-                MessageHelper.show_info(self, "نجح", message)
-                self.load_internet_subscriptions()
-            else:
-                MessageHelper.show_error(self, "خطأ", message)
-    
-    def activate_subscription(self):
-        """
-        تفعيل اشتراك الإنترنت
-        """
-        if not self.selected_subscription or self.selected_subscription.is_active:
-            return
-        
-        success, message = self.internet_controller.activate_subscription(self.selected_subscription.id)
-        
-        if success:
-            MessageHelper.show_info(self, "نجح", message)
-            self.load_internet_subscriptions()
-        else:
-            MessageHelper.show_error(self, "خطأ", message)
-    
-    def deactivate_subscription(self):
-        """
-        إيقاف اشتراك الإنترنت
-        """
-        if not self.selected_subscription or not self.selected_subscription.is_active:
-            return
-        
-        reply = MessageHelper.show_question(
-            self, "تأكيد الإيقاف",
-            f"هل أنت متأكد من إيقاف هذا الاشتراك؟\n"
-            f"الوصف: {self.selected_subscription.description}\n"
-            f"سيتم إيقاف الخدمة فوراً."
-        )
-        
-        if reply:
-            success, message = self.internet_controller.deactivate_subscription(self.selected_subscription.id)
             
             if success:
                 MessageHelper.show_info(self, "نجح", message)

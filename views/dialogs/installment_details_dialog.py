@@ -4,10 +4,10 @@
 """
 
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
-                             QProgressBar, QFrame, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView, QMessageBox)
+                             QProgressBar, QFrame, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView, QMessageBox, QInputDialog)
 from PyQt5.QtCore import Qt
 from database.models import Installment, Payment
-from database.queries import PaymentQueries
+from database.queries import PaymentQueries, InstallmentQueries
 from database.database_connection import DatabaseConnection
 from utils.helpers import NumberHelper, DateHelper
 from datetime import date
@@ -22,6 +22,7 @@ class InstallmentDetailsDialog(QDialog):
         self.installment = installment
         self.db_connection = db_connection
         self.payment_queries = PaymentQueries(self.db_connection)
+        self.installment_queries = InstallmentQueries(self.db_connection)
         self.setWindowTitle("تفاصيل القسط")
         self.setMinimumWidth(600)
         self.main_layout = QVBoxLayout(self)
@@ -67,8 +68,8 @@ class InstallmentDetailsDialog(QDialog):
         start_date = DateHelper.format_date(self.installment.start_date) if self.installment.start_date else "غير محدد"
         details_layout.addWidget(self.create_info_label("تاريخ البداية:", start_date))
         
-        status = "مكتمل" if self.installment.is_completed else "نشط"
-        details_layout.addWidget(self.create_info_label("الحالة:", status))
+        self.status_label = self.create_info_label("الحالة:", "مكتمل" if self.installment.is_completed else "نشط")
+        details_layout.addWidget(self.status_label)
         
         layout.addWidget(details_frame)
 
@@ -174,9 +175,9 @@ class InstallmentDetailsDialog(QDialog):
         self.payments_table.setEditTriggers(QTableWidget.NoEditTriggers)
         payments_layout.addWidget(self.payments_table)
 
-        add_payment_button = QPushButton("إضافة دفعة")
-        add_payment_button.clicked.connect(self.add_payment)
-        payments_layout.addWidget(add_payment_button)
+        self.add_payment_button = QPushButton("إضافة دفعة")
+        self.add_payment_button.clicked.connect(self.add_payment)
+        payments_layout.addWidget(self.add_payment_button)
 
         layout.addWidget(payments_frame)
 
@@ -200,21 +201,22 @@ class InstallmentDetailsDialog(QDialog):
         """
         إضافة دفعة جديدة
         """
-        # هنا يمكن فتح نافذة جديدة لإضافة دفعة
-        # حاليا سنضيف دفعة افتراضية كمثال
-        new_payment = Payment(
-            installment_id=self.installment.id,
-            amount=self.installment.installment_amount,
-            payment_date=date.today()
-        )
-        payment_id = self.payment_queries.create_payment(new_payment)
-        if payment_id:
-            # تحديث المبلغ المدفوع في القسط
-            self.installment.paid_amount += new_payment.amount
-            # يمكنك استدعاء دالة لتحديث القسط في قاعدة البيانات هنا
-            self.load_payments()
-            # تحديث واجهة المستخدم
-            self.update_amounts_display()
+        amount, ok = QInputDialog.getDouble(self, "إضافة دفعة", "أدخل مبلغ الدفعة:", 0, 0, self.installment.remaining_amount, 2)
+
+        if ok and amount > 0:
+            new_payment = Payment(
+                installment_id=self.installment.id,
+                amount=amount,
+                payment_date=date.today()
+            )
+            payment_id = self.payment_queries.create_payment(new_payment)
+            if payment_id:
+                self.refresh_data()
+                QMessageBox.information(self, "نجاح", "تمت إضافة الدفعة بنجاح.")
+            else:
+                QMessageBox.critical(self, "خطأ", "فشل في إضافة الدفعة.")
+        elif ok:
+            QMessageBox.warning(self, "تنبيه", "يجب أن يكون مبلغ الدفعة أكبر من صفر.")
 
     def delete_payment(self, payment_id: int):
         """
@@ -224,13 +226,9 @@ class InstallmentDetailsDialog(QDialog):
                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
         if reply == QMessageBox.Yes:
-            # قبل الحذف، يجب استعادة المبلغ المدفوع من القسط
-            # هذه الخطوة تحتاج إلى الحصول على تفاصيل الدفعة قبل حذفها
-            # حاليا، سنقوم بالحذف مباشرة
             if self.payment_queries.delete_payment(payment_id):
+                self.refresh_data()
                 QMessageBox.information(self, "نجاح", "تم حذف الدفعة بنجاح.")
-                self.load_payments()
-                # يجب تحديث المبلغ المدفوع في القسط وواجهة المستخدم
             else:
                 QMessageBox.critical(self, "خطأ", "فشل حذف الدفعة.")
 
@@ -242,3 +240,15 @@ class InstallmentDetailsDialog(QDialog):
         self.paid_amount_label.setText(f"<b>المبلغ المدفوع:</b> {NumberHelper.format_currency(self.installment.paid_amount)}")
         self.remaining_amount_label.setText(f"<b>المبلغ المتبقي:</b> {NumberHelper.format_currency(self.installment.remaining_amount)}")
         self.progress_bar.setValue(int(self.installment.completion_percentage))
+        self.status_label.setText(f"<b>الحالة:</b> {'مكتمل' if self.installment.is_completed else 'نشط'}")
+        self.add_payment_button.setEnabled(not self.installment.is_completed)
+
+    def refresh_data(self):
+        """
+        تحديث البيانات من قاعدة البيانات
+        """
+        updated_installment = self.installment_queries.get_installment_by_id(self.installment.id)
+        if updated_installment:
+            self.installment = updated_installment
+        self.load_payments()
+        self.update_amounts_display()

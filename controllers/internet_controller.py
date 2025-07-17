@@ -21,7 +21,7 @@ class InternetController:
         self.queries = InternetSubscriptionQueries(self.db)
     
     def add_subscription(self, person_id: int, plan_name: str, monthly_fee: float,
-                        speed: str, start_date: Optional[date] = None,
+                        start_date: Optional[date] = None,
                         end_date: Optional[date] = None) -> tuple[bool, str, Optional[int]]:
         """
         إضافة اشتراك جديد
@@ -30,7 +30,6 @@ class InternetController:
             person_id: معرف الزبون
             plan_name: اسم الباقة
             monthly_fee: الرسوم الشهرية
-            speed: السرعة
             start_date: تاريخ البداية
             end_date: تاريخ النهاية
             
@@ -41,20 +40,25 @@ class InternetController:
         from utils.validators import InternetSubscriptionValidator
         validator = InternetSubscriptionValidator()
         is_valid, error_message = validator.validate_subscription_data(
-            person_id, plan_name, monthly_fee, speed, start_date, end_date
+            person_id, plan_name, monthly_fee, start_date, end_date
         )
         if not is_valid:
             return False, error_message, None
         
+        # تحديد الحالة بناءً على التاريخ
+        is_active = False
+        if start_date and end_date:
+            today = date.today()
+            is_active = start_date <= today <= end_date
+
         # إنشاء الاشتراك
         subscription = InternetSubscription(
             person_id=person_id,
             plan_name=plan_name.strip(),
             monthly_fee=monthly_fee,
-            speed=speed.strip(),
             start_date=start_date,
             end_date=end_date,
-            is_active=True
+            is_active=is_active
         )
         
         subscription_id = self.queries.create_subscription(subscription)
@@ -65,8 +69,7 @@ class InternetController:
             return False, "حدث خطأ أثناء إضافة الاشتراك", None
     
     def update_subscription(self, subscription_id: int, plan_name: str, monthly_fee: float,
-                           speed: str, start_date: Optional[date], end_date: Optional[date],
-                           is_active: bool) -> tuple[bool, str]:
+                           start_date: Optional[date], end_date: Optional[date]) -> tuple[bool, str]:
         """
         تحديث اشتراك
         
@@ -74,10 +77,8 @@ class InternetController:
             subscription_id: معرف الاشتراك
             plan_name: اسم الباقة الجديد
             monthly_fee: الرسوم الشهرية الجديدة
-            speed: السرعة الجديدة
             start_date: تاريخ البداية الجديد
             end_date: تاريخ النهاية الجديد
-            is_active: حالة النشاط
             
         Returns:
             tuple: (نجح, رسالة)
@@ -91,19 +92,24 @@ class InternetController:
         from utils.validators import InternetSubscriptionValidator
         validator = InternetSubscriptionValidator()
         is_valid, error_message = validator.validate_subscription_data(
-            existing_subscription.person_id, plan_name, monthly_fee, speed,
+            existing_subscription.person_id, plan_name, monthly_fee,
             start_date, end_date
         )
         if not is_valid:
             return False, error_message
         
+        # تحديد الحالة بناءً على التاريخ
+        is_active = False
+        if start_date and end_date:
+            today = date.today()
+            is_active = start_date <= today <= end_date
+
         # تحديث البيانات
         updated_subscription = InternetSubscription(
             id=subscription_id,
             person_id=existing_subscription.person_id,
             plan_name=plan_name.strip(),
             monthly_fee=monthly_fee,
-            speed=speed.strip(),
             start_date=start_date,
             end_date=end_date,
             is_active=is_active
@@ -113,53 +119,7 @@ class InternetController:
             return True, "تم تحديث الاشتراك بنجاح"
         else:
             return False, "حدث خطأ أثناء تحديث الاشتراك"
-    
-    def deactivate_subscription(self, subscription_id: int) -> tuple[bool, str]:
-        """
-        إلغاء تفعيل اشتراك
-        
-        Args:
-            subscription_id: معرف الاشتراك
-            
-        Returns:
-            tuple: (نجح, رسالة)
-        """
-        existing_subscription = self.get_subscription_by_id(subscription_id)
-        if not existing_subscription:
-            return False, "الاشتراك غير موجود"
-        
-        if not existing_subscription.is_active:
-            return False, "الاشتراك غير مفعل مسبقاً"
-        
-        return self.update_subscription(
-            subscription_id, existing_subscription.plan_name,
-            existing_subscription.monthly_fee, existing_subscription.speed,
-            existing_subscription.start_date, existing_subscription.end_date, False
-        )
-    
-    def activate_subscription(self, subscription_id: int) -> tuple[bool, str]:
-        """
-        تفعيل اشتراك
-        
-        Args:
-            subscription_id: معرف الاشتراك
-            
-        Returns:
-            tuple: (نجح, رسالة)
-        """
-        existing_subscription = self.get_subscription_by_id(subscription_id)
-        if not existing_subscription:
-            return False, "الاشتراك غير موجود"
-        
-        if existing_subscription.is_active:
-            return False, "الاشتراك مفعل مسبقاً"
-        
-        return self.update_subscription(
-            subscription_id, existing_subscription.plan_name,
-            existing_subscription.monthly_fee, existing_subscription.speed,
-            existing_subscription.start_date, existing_subscription.end_date, True
-        )
-    
+
     def delete_subscription(self, subscription_id: int) -> tuple[bool, str]:
         """
         حذف اشتراك
@@ -267,9 +227,8 @@ class InternetController:
         search_term = search_term.strip().lower()
         
         return [sub for sub in all_subscriptions 
-                if (search_term in sub.plan_name.lower() or
-                    search_term in sub.speed.lower() or
-                    search_term in sub.person_name.lower() or
+                if (search_term in (sub.plan_name or "").lower() or
+                    search_term in (sub.person_name or "").lower() or
                     search_term in str(sub.monthly_fee))]
     
     def get_subscription_statistics(self) -> dict:
@@ -280,14 +239,21 @@ class InternetController:
             قاموس بالإحصائيات
         """
         all_subscriptions = self.get_all_subscriptions()
-        active_subscriptions = [sub for sub in all_subscriptions if sub.is_active]
-        inactive_subscriptions = [sub for sub in all_subscriptions if not sub.is_active]
-        expired_subscriptions = self.get_expired_subscriptions()
+        today = date.today()
         
+        active_subscriptions = []
+        expired_subscriptions = []
+        
+        for sub in all_subscriptions:
+            if sub.start_date and sub.end_date:
+                if sub.start_date <= today <= sub.end_date:
+                    active_subscriptions.append(sub)
+                elif sub.end_date < today:
+                    expired_subscriptions.append(sub)
+
         return {
             'total_subscriptions_count': len(all_subscriptions),
             'active_subscriptions_count': len(active_subscriptions),
-            'inactive_subscriptions_count': len(inactive_subscriptions),
             'expired_subscriptions_count': len(expired_subscriptions),
             'total_monthly_revenue': sum(sub.monthly_fee for sub in active_subscriptions),
             'average_monthly_fee': sum(sub.monthly_fee for sub in all_subscriptions) / len(all_subscriptions) if all_subscriptions else 0

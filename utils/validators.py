@@ -176,7 +176,7 @@ class InternetSubscriptionValidator:
     
     @staticmethod
     def validate_subscription_data(person_id: int, plan_name: str, monthly_fee: float,
-                                  speed: str, start_date: Optional[date],
+                                  start_date: Optional[date],
                                   end_date: Optional[date]) -> Tuple[bool, str]:
         """
         التحقق من صحة بيانات الاشتراك
@@ -185,7 +185,6 @@ class InternetSubscriptionValidator:
             person_id: معرف الزبون
             plan_name: اسم الباقة
             monthly_fee: الرسوم الشهرية
-            speed: السرعة
             start_date: تاريخ البداية
             end_date: تاريخ النهاية
             
@@ -209,10 +208,6 @@ class InternetSubscriptionValidator:
         
         if monthly_fee > 999999:
             return False, "الرسوم الشهرية كبيرة جداً"
-        
-        # التحقق من السرعة
-        if speed and len(speed.strip()) > 50:
-            return False, "وصف السرعة طويل جداً"
         
         # التحقق من التواريخ
         if start_date and end_date and start_date >= end_date:
