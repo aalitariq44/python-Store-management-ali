@@ -530,8 +530,27 @@ class InstallmentsView(QMainWindow):
         if not self.selected_installment:
             return
         
-        dialog = InstallmentDetailsDialog(self.selected_installment, self.installment_controller.db, self)
+        # التأكد من أن البيانات محدثة قبل فتح النافذة
+        updated_installment = self.installment_controller.get_installment_by_id(self.selected_installment.id)
+        if not updated_installment:
+            MessageHelper.show_error(self, "خطأ", "لم يتم العثور على القسط المحدد.")
+            self.load_installments()
+            return
+        
+        dialog = InstallmentDetailsDialog(updated_installment, self.installment_controller.db, self)
         dialog.exec_()
+        
+        # تحديث البيانات بعد إغلاق نافذة التفاصيل لضمان عكس أي تغييرات
+        self.load_installments()
+        # إعادة تحديد نفس الصف إذا كان لا يزال موجودًا
+        current_row = -1
+        for row in range(self.table.rowCount()):
+            id_item = self.table.item(row, 0)
+            if id_item and id_item.data(Qt.UserRole).id == self.selected_installment.id:
+                current_row = row
+                break
+        if current_row != -1:
+            self.table.selectRow(current_row)
 
     def add_payment(self):
         """
@@ -542,6 +561,14 @@ class InstallmentsView(QMainWindow):
         
         from PyQt5.QtWidgets import QInputDialog
         
+        # التأكد من أن self.selected_installment محدث قبل عرض النافذة
+        updated_installment = self.installment_controller.get_installment_by_id(self.selected_installment.id)
+        if not updated_installment:
+            MessageHelper.show_error(self, "خطأ", "لم يتم العثور على القسط المحدد.")
+            self.load_installments()
+            return
+        self.selected_installment = updated_installment
+
         remaining = self.selected_installment.remaining_amount
         payment_amount, ok = QInputDialog.getDouble(
             self, "إضافة دفعة", 
@@ -557,6 +584,17 @@ class InstallmentsView(QMainWindow):
             
             if success:
                 MessageHelper.show_info(self, "نجح", message)
+                # تحديث البيانات بعد إضافة الدفعة مباشرة
                 self.load_installments()
+                # إعادة تحديد نفس الصف إذا كان لا يزال موجودًا
+                current_row = -1
+                for row in range(self.table.rowCount()):
+                    id_item = self.table.item(row, 0)
+                    if id_item and id_item.data(Qt.UserRole).id == self.selected_installment.id:
+                        current_row = row
+                        break
+                if current_row != -1:
+                    self.table.selectRow(current_row)
+
             else:
                 MessageHelper.show_error(self, "خطأ", message)
