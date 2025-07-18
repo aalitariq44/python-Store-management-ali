@@ -421,7 +421,8 @@ class PersonsView(QMainWindow):
             success, message, person_id = self.controller.add_person(
                 person_data['name'],
                 person_data['phone'], 
-                person_data['address']
+                person_data['address'],
+                person_data['notes']
             )
             
             if success:
@@ -445,7 +446,8 @@ class PersonsView(QMainWindow):
                 self.selected_person.id,
                 person_data['name'],
                 person_data['phone'],
-                person_data['address']
+                person_data['address'],
+                person_data['notes']
             )
             
             if success:
