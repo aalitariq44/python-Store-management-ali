@@ -155,7 +155,7 @@ class PersonsView(QMainWindow):
         table_title = QLabel("قائمة الزبائن")
         table_title.setStyleSheet("""
             QLabel {
-                font-size: 16px;
+                font-size: 24px;
                 font-weight: bold;
                 color: #495057;
                 margin-bottom: 10px;
@@ -212,7 +212,7 @@ class PersonsView(QMainWindow):
         info_title = QLabel("معلومات الزبون")
         info_title.setStyleSheet("""
             QLabel {
-                font-size: 16px;
+                font-size: 24px;
                 font-weight: bold;
                 color: #495057;
                 margin-bottom: 15px;
@@ -233,7 +233,7 @@ class PersonsView(QMainWindow):
                 border: 1px solid #ced4da;
                 border-radius: 5px;
                 padding: 10px;
-                font-size: 12px;
+                font-size: 24px;
             }
         """)
         info_layout.addWidget(self.info_display)
@@ -242,7 +242,7 @@ class PersonsView(QMainWindow):
         stats_label = QLabel("الإحصائيات:")
         stats_label.setStyleSheet("""
             QLabel {
-                font-size: 14px;
+                font-size: 24px;
                 font-weight: bold;
                 color: #495057;
                 margin-top: 15px;
@@ -259,7 +259,7 @@ class PersonsView(QMainWindow):
                 border: 1px solid #ced4da;
                 border-radius: 5px;
                 padding: 10px;
-                font-size: 11px;
+                font-size: 24px;
             }
         """)
         info_layout.addWidget(self.stats_display)
