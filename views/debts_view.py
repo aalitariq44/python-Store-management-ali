@@ -79,7 +79,7 @@ class DebtsView(QMainWindow):
         title_label.setStyleSheet("""
             QLabel {
                 color: white;
-                font-size: 24px;
+                font-size: 34px;
                 font-weight: bold;
                 background: transparent;
             }

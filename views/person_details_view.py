@@ -15,7 +15,7 @@ from controllers.debt_controller import DebtController
 from controllers.installment_controller import InstallmentController
 from controllers.internet_controller import InternetController
 from utils.helpers import MessageHelper, AppHelper, TableHelper, DateHelper, NumberHelper
-from views.dتعدialogs.add_debt_dialog import AddDebtDialog
+from views.dialogs.add_debt_dialog import AddDebtDialog
 from views.dialogs.add_installment_dialog import AddInstallmentDialog
 from views.dialogs.add_internet_dialog import AddInternetDialog
 
