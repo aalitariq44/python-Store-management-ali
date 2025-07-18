@@ -52,7 +52,7 @@ class LoginDialog(QDialog):
                 color: #34495e;
             }
             #password_label {
-                font-size: 18px;
+                font-size: 24px;
             }
             #title_label {
                 font-size: 28px;
@@ -65,7 +65,7 @@ class LoginDialog(QDialog):
                 border: 1px solid #ced4da;
                 border-radius: 10px;
                 padding: 15px 20px;
-                font-size: 18px;
+                font-size: 24px;
                 min-height: 50px;
             }
             #password_input:focus {
@@ -74,7 +74,7 @@ class LoginDialog(QDialog):
             QPushButton {
                 border-radius: 10px;
                 padding: 15px 25px;
-                font-size: 18px;
+                font-size: 24px;
                 font-weight: bold;
                 min-height: 50px;
             }

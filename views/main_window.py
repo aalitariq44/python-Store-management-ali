@@ -146,7 +146,7 @@ class MainWindow(QMainWindow):
         subtitle_label.setStyleSheet("""
             #subtitle_label {
                 color: #ecf0f1;
-                font-size: 18px;
+                font-size: 24px;
                 background: transparent;
                 margin-top: 10px;
             }
@@ -294,28 +294,8 @@ class MainWindow(QMainWindow):
         
         status_layout = QVBoxLayout(status_frame)
         
-        status_label = QLabel("معلومات النظام")
-        status_label.setObjectName("status_label")
-        status_label.setStyleSheet("""
-            #status_label {
-                font-size: 20px;
-                font-weight: bold;
-                color: #495057;
-                margin-bottom: 10px;
-            }
-        """)
-        status_layout.addWidget(status_label)
         
-        # يمكن إضافة إحصائيات سريعة هنا لاحقاً
-        info_label = QLabel("مرحباً بك في نظام إدارة محل كاظم السعدي. اختر أحد الخيارات أعلاه للبدء.")
-        info_label.setObjectName("info_label")
-        info_label.setStyleSheet("""
-            #info_label {
-                color: #6c757d;
-                font-size: 16px;
-            }
-        """)
-        status_layout.addWidget(info_label)
+       
         
         layout.addWidget(status_frame)
     
