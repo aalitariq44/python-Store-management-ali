@@ -530,3 +530,15 @@ class PaymentQueries:
         query = "DELETE FROM payments WHERE id = ?"
         result = self.db.execute_query(query, (payment_id,))
         return result is not None
+
+    def delete_payments_by_installment_id(self, installment_id: int) -> tuple[bool, str]:
+        """
+        حذف جميع الدفعات المرتبطة بقسط معين
+        """
+        query = "DELETE FROM payments WHERE installment_id = ?"
+        try:
+            self.db.execute_query(query, (installment_id,))
+            return True, "تم حذف الدفعات بنجاح"
+        except Exception as e:
+            # يمكنك تسجيل الخطأ هنا إذا أردت
+            return False, str(e)

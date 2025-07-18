@@ -37,7 +37,7 @@ class FirstTimeSetupDialog(QDialog):
         إعداد واجهة المستخدم
         """
         self.setWindowTitle("إعداد كلمة المرور - نظام إدارة المتجر")
-        self.setFixedSize(450, 400)
+        self.setFixedSize(600, 400)  # تم تغيير العرض من 450 إلى 600
         self.setWindowFlags(Qt.Dialog | Qt.WindowTitleHint)
         
         # التخطيط الرئيسي
@@ -93,7 +93,7 @@ class FirstTimeSetupDialog(QDialog):
                 padding: 10px;
                 border: 2px solid #bdc3c7;
                 border-radius: 5px;
-                font-size: 12px;
+                font-size: 24px;
                 background-color: white;
             }
             QLineEdit:focus {
@@ -119,7 +119,7 @@ class FirstTimeSetupDialog(QDialog):
                 padding: 10px;
                 border: 2px solid #bdc3c7;
                 border-radius: 5px;
-                font-size: 12px;
+                font-size: 24px;
                 background-color: white;
             }
             QLineEdit:focus {

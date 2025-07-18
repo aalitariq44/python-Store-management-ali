@@ -139,7 +139,7 @@ class InstallmentController:
     
     def delete_installment(self, installment_id: int) -> tuple[bool, str]:
         """
-        حذف قسط
+        حذف قسط وجميع الدفعات المرتبطة به
         
         Args:
             installment_id: معرف القسط
@@ -152,10 +152,16 @@ class InstallmentController:
         if not existing_installment:
             return False, "القسط غير موجود"
         
+        # أولاً، حذف جميع الدفعات المرتبطة بهذا القسط
+        payments_deleted, payments_message = self.payment_queries.delete_payments_by_installment_id(installment_id)
+        if not payments_deleted:
+            return False, f"فشل حذف الدفعات المرتبطة: {payments_message}"
+
+        # ثانياً، حذف القسط نفسه
         if self.queries.delete_installment(installment_id):
-            return True, "تم حذف القسط بنجاح"
+            return True, "تم حذف القسط وجميع دفعاته بنجاح"
         else:
-            return False, "حدث خطأ أثناء حذف القسط"
+            return False, "حدث خطأ أثناء حذف القسط بعد حذف الدفعات"
     
     def get_all_installments(self) -> List[Installment]:
         """
