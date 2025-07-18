@@ -38,7 +38,7 @@ class LoginDialog(QDialog):
         """
         self.setWindowTitle("تسجيل الدخول")
         self.setWindowIcon(QIcon("resources/icons/login.png"))
-        self.setFixedWidth(450)
+        self.setFixedWidth(500)
         self.setWindowFlags(Qt.Dialog | Qt.WindowTitleHint | Qt.CustomizeWindowHint)
 
         # الأنماط
@@ -51,29 +51,32 @@ class LoginDialog(QDialog):
                 font-family: Arial;
                 color: #34495e;
             }
+            #password_label {
+                font-size: 18px;
+            }
             #title_label {
-                font-size: 22px;
+                font-size: 28px;
                 font-weight: bold;
                 color: #2c3e50;
-                padding: 10px 0;
+                padding: 15px 0;
             }
-            QLineEdit {
+            #password_input {
                 background-color: white;
                 border: 1px solid #ced4da;
-                border-radius: 8px;
-                padding: 12px 15px;
-                font-size: 14px;
-                min-height: 40px;
+                border-radius: 10px;
+                padding: 15px 20px;
+                font-size: 18px;
+                min-height: 50px;
             }
-            QLineEdit:focus {
+            #password_input:focus {
                 border-color: #80bdff;
             }
             QPushButton {
-                border-radius: 8px;
-                padding: 12px 20px;
-                font-size: 14px;
+                border-radius: 10px;
+                padding: 15px 25px;
+                font-size: 18px;
                 font-weight: bold;
-                min-height: 40px;
+                min-height: 50px;
             }
             #login_button {
                 background-color: #007bff;
@@ -99,8 +102,8 @@ class LoginDialog(QDialog):
 
         # التخطيط الرئيسي
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(40, 40, 40, 40)
-        main_layout.setSpacing(25)
+        main_layout.setContentsMargins(50, 50, 50, 50)
+        main_layout.setSpacing(30)
 
         # عنوان النافذة
         title_label = QLabel("تسجيل الدخول")
@@ -110,7 +113,9 @@ class LoginDialog(QDialog):
 
         # حقل كلمة المرور
         password_label = QLabel("كلمة المرور:")
+        password_label.setObjectName("password_label")
         self.password_input = QLineEdit()
+        self.password_input.setObjectName("password_input")
         self.password_input.setEchoMode(QLineEdit.Password)
         self.password_input.setPlaceholderText("أدخل كلمة المرور هنا")
         self.password_input.returnPressed.connect(self.login)
@@ -123,7 +128,7 @@ class LoginDialog(QDialog):
 
         # أزرار التحكم
         buttons_layout = QHBoxLayout()
-        buttons_layout.setSpacing(15)
+        buttons_layout.setSpacing(20)
 
         self.login_button = QPushButton("دخول")
         self.login_button.setObjectName("login_button")
