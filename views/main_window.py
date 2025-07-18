@@ -36,7 +36,7 @@ class MainWindow(QMainWindow):
         """
         تهيئة واجهة المستخدم
         """
-        self.setWindowTitle("نظام إدارة المتجر")
+        self.setWindowTitle("نظام إدارة محل كاظم السعدي")
         self.setMinimumSize(1000, 700)
         
         # توسيط النافذة
@@ -126,7 +126,7 @@ class MainWindow(QMainWindow):
         title_layout = QVBoxLayout(title_frame)
         
         # العنوان الرئيسي
-        title_label = QLabel("نظام إدارة المتجر")
+        title_label = QLabel("نظام إدارة محل كاظم السعدي")
         title_label.setAlignment(Qt.AlignCenter)
         title_label.setStyleSheet("""
             QLabel {
@@ -304,7 +304,7 @@ class MainWindow(QMainWindow):
         status_layout.addWidget(status_label)
         
         # يمكن إضافة إحصائيات سريعة هنا لاحقاً
-        info_label = QLabel("مرحباً بك في نظام إدارة المتجر. اختر أحد الخيارات أعلاه للبدء.")
+        info_label = QLabel("مرحباً بك في نظام إدارة محل كاظم السعدي. اختر أحد الخيارات أعلاه للبدء.")
         info_label.setStyleSheet("""
             QLabel {
                 color: #6c757d;
@@ -364,7 +364,7 @@ class MainWindow(QMainWindow):
         عرض معلومات حول البرنامج
         """
         about_text = """
-        نظام إدارة المتجر
+        نظام إدارة محل كاظم السعدي
         الإصدار 1.0
         
         نظام شامل لإدارة:
