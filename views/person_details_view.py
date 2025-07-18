@@ -15,7 +15,7 @@ from controllers.debt_controller import DebtController
 from controllers.installment_controller import InstallmentController
 from controllers.internet_controller import InternetController
 from utils.helpers import MessageHelper, AppHelper, TableHelper, DateHelper, NumberHelper
-from views.dialogs.add_debt_dialog import AddDebtDialog
+from views.dتعدialogs.add_debt_dialog import AddDebtDialog
 from views.dialogs.add_installment_dialog import AddInstallmentDialog
 from views.dialogs.add_internet_dialog import AddInternetDialog
 
@@ -88,7 +88,7 @@ class PersonDetailsView(QMainWindow):
         name_label.setStyleSheet("""
             QLabel {
                 color: white;
-                font-size: 18px;
+                font-size: 24px;
                 font-weight: bold;
                 background: transparent;
             }
@@ -99,7 +99,7 @@ class PersonDetailsView(QMainWindow):
         phone_label.setStyleSheet("""
             QLabel {
                 color: #e3f2fd;
-                font-size: 14px;
+                font-size: 24px;
                 background: transparent;
             }
         """)
@@ -109,7 +109,7 @@ class PersonDetailsView(QMainWindow):
         address_label.setStyleSheet("""
             QLabel {
                 color: #e3f2fd;
-                font-size: 14px;
+                font-size: 24px;
                 background: transparent;
             }
         """)
@@ -121,7 +121,7 @@ class PersonDetailsView(QMainWindow):
             created_label.setStyleSheet("""
                 QLabel {
                     color: #e3f2fd;
-                    font-size: 12px;
+                    font-size: 24px;
                     background: transparent;
                 }
             """)
@@ -159,7 +159,7 @@ class PersonDetailsView(QMainWindow):
                 stat_label.setStyleSheet("""
                     QLabel {
                         color: white;
-                        font-size: 12px;
+                        font-size: 24px;
                         font-weight: bold;
                         background: transparent;
                         padding: 2px;
@@ -172,7 +172,7 @@ class PersonDetailsView(QMainWindow):
             error_label.setStyleSheet("""
                 QLabel {
                     color: #ffcdd2;
-                    font-size: 12px;
+                    font-size: 24px;
                     background: transparent;
                 }
             """)
@@ -436,7 +436,7 @@ class PersonDetailsView(QMainWindow):
         
         # جدول اشتراكات الإنترنت
         self.internet_table = QTableWidget()
-        headers = ["المعرف", "اسم الباقة", "الرسوم الشهرية", "السرعة", "تاريخ البداية", "تاريخ النهاية", "الحالة"]
+        headers = ["المعرف", "اسم الباقة", "الرسوم الشهرية", "تاريخ البداية", "تاريخ النهاية", "الحالة"]
         TableHelper.setup_table_headers(self.internet_table, headers)
         
         self.internet_table.setAlternatingRowColors(True)
@@ -595,16 +595,13 @@ class PersonDetailsView(QMainWindow):
                 fee_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
                 self.internet_table.setItem(row, 2, fee_item)
                 
-                # السرعة
-                self.internet_table.setItem(row, 3, QTableWidgetItem(subscription.speed or "غير محدد"))
-                
                 # تاريخ البداية
                 start_date = DateHelper.format_date(subscription.start_date) if subscription.start_date else "غير محدد"
-                self.internet_table.setItem(row, 4, QTableWidgetItem(start_date))
+                self.internet_table.setItem(row, 3, QTableWidgetItem(start_date))
                 
                 # تاريخ النهاية
                 end_date = DateHelper.format_date(subscription.end_date) if subscription.end_date else "غير محدد"
-                self.internet_table.setItem(row, 5, QTableWidgetItem(end_date))
+                self.internet_table.setItem(row, 4, QTableWidgetItem(end_date))
                 
                 # الحالة
                 status = "نشط" if subscription.is_active else "غير نشط"
@@ -615,7 +612,7 @@ class PersonDetailsView(QMainWindow):
                 else:
                     status_item.setBackground(Qt.red)
                     status_item.setForeground(Qt.white)
-                self.internet_table.setItem(row, 6, status_item)
+                self.internet_table.setItem(row, 5, status_item)
             
         except Exception as e:
             MessageHelper.show_error(self, "خطأ", f"حدث خطأ أثناء تحميل اشتراكات الإنترنت: {str(e)}")
@@ -856,7 +853,6 @@ class PersonDetailsView(QMainWindow):
                 self.person.id,
                 data['plan_name'],
                 data['monthly_fee'],
-                data['speed'],
                 data['start_date'],
                 data['end_date']
             )
@@ -887,7 +883,6 @@ class PersonDetailsView(QMainWindow):
                 subscription.id,
                 data['plan_name'],
                 data['monthly_fee'],
-                data['speed'],
                 data['start_date'],
                 data['end_date'],
                 data['is_active']
