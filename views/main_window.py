@@ -236,7 +236,7 @@ class MainWindow(QMainWindow):
                 color: white;
                 border: none;
                 border-radius: 10px;
-                font-size: 22px;
+                font-size: 24px;
                 font-weight: bold;
                 text-align: center;
                 padding: 20px;

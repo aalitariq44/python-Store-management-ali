@@ -91,7 +91,7 @@ class DebtsView(QMainWindow):
         subtitle_label.setStyleSheet("""
             QLabel {
                 color: #f8d7da;
-                font-size: 14px;
+                font-size: 24px;
                 background: transparent;
             }
         """)
@@ -181,7 +181,7 @@ class DebtsView(QMainWindow):
         table_title = QLabel("قائمة الديون")
         table_title.setStyleSheet("""
             QLabel {
-                font-size: 16px;
+                font-size: 24px;
                 font-weight: bold;
                 color: #495057;
                 margin-bottom: 10px;

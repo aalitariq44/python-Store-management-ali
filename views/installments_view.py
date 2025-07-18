@@ -92,7 +92,7 @@ class InstallmentsView(QMainWindow):
         subtitle_label.setStyleSheet("""
             QLabel {
                 color: #fdf2e9;
-                font-size: 14px;
+                font-size: 24px;
                 background: transparent;
             }
         """)
@@ -194,7 +194,7 @@ class InstallmentsView(QMainWindow):
         table_title = QLabel("قائمة الأقساط")
         table_title.setStyleSheet("""
             QLabel {
-                font-size: 16px;
+                font-size: 24px;
                 font-weight: bold;
                 color: #495057;
                 margin-bottom: 10px;

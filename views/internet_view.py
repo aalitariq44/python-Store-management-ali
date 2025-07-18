@@ -95,7 +95,7 @@ class InternetView(QMainWindow):
         subtitle_label.setStyleSheet("""
             QLabel {
                 color: #ddd;
-                font-size: 14px;
+                font-size: 24px;
                 background: transparent;
             }
         """)
@@ -191,7 +191,7 @@ class InternetView(QMainWindow):
         table_title = QLabel("قائمة اشتراكات الإنترنت")
         table_title.setStyleSheet("""
             QLabel {
-                font-size: 16px;
+                font-size: 24px;
                 font-weight: bold;
                 color: #495057;
                 margin-bottom: 10px;
