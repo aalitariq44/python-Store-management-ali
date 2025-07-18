@@ -170,18 +170,31 @@ class AddDebtDialog(QDialog):
                 qdate = DateHelper.date_to_qdate(self.debt.due_date)
                 if qdate:
                     self.due_date_input.setDate(qdate)
-            
+
             self.is_paid_checkbox.setChecked(self.debt.is_paid)
+
+            # Set the person in the combo box and disable it
+            for i in range(self.person_combo.count()):
+                if self.person_combo.itemData(i) == self.debt.person_id:
+                    self.person_combo.setCurrentIndex(i)
+                    break
+            self.person_combo.setEnabled(False)
     
     def get_debt_data(self) -> dict:
         """
         الحصول على بيانات الدين من النموذج
         """
+        if self.debt:
+            person_id = self.debt.person_id
+        elif self.person_id:
+            person_id = self.person_id
+        else:
+            person_id = self.person_combo.currentData()
+
         due_date = DateHelper.qdate_to_date(self.due_date_input.date())
-        selected_person_id = self.person_combo.currentData()
-        
+
         return {
-            'person_id': selected_person_id,
+            'person_id': person_id,
             'amount': self.amount_input.value(),
             'description': self.description_input.toPlainText().strip(),
             'due_date': due_date,
@@ -195,7 +208,7 @@ class AddDebtDialog(QDialog):
         data = self.get_debt_data()
         
         # التحقق من اختيار الزبون
-        if not self.person_id and not data['person_id']:
+        if not data['person_id']:
             return False, "الرجاء اختيار زبون"
         
         if data['amount'] <= 0:
