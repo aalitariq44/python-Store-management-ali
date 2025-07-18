@@ -137,7 +137,7 @@ class PasswordSettingsDialog(QDialog):
                 border: 1px solid #ced4da;
                 border-radius: 8px;
                 padding: 12px 15px;
-                font-size: 14px;
+                font-size: 24px;
                 color: #495057;
             }
             QLineEdit:focus {
@@ -146,7 +146,7 @@ class PasswordSettingsDialog(QDialog):
             QPushButton {
                 border-radius: 8px;
                 padding: 12px 25px;
-                font-size: 14px;
+                font-size: 24px;
                 font-weight: bold;
             }
             QPushButton#save_button {
