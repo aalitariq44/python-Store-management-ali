@@ -204,8 +204,8 @@ class InstallmentsView(QMainWindow):
         
         # الجدول
         self.table = QTableWidget()
-        headers = ["المعرف", "اسم الزبون", "المبلغ الإجمالي", 
-                  "الدورية", "الوصف", "نسبة الإنجاز", "الحالة", "تاريخ البداية"]
+        headers = ["المعرف", "اسم الزبون", "المبلغ الإجمالي", "المبلغ المدفوع", "المبلغ المتبقي",
+                   "الدورية", "الوصف", "نسبة الإنجاز", "الحالة", "تاريخ البداية"]
         TableHelper.setup_table_headers(self.table, headers)
         
         # تنسيق الجدول
@@ -325,14 +325,24 @@ class InstallmentsView(QMainWindow):
             total_item = QTableWidgetItem(NumberHelper.format_currency(installment.total_amount))
             total_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
             self.table.setItem(row, 2, total_item)
+
+            # المبلغ المدفوع
+            paid_item = QTableWidgetItem(NumberHelper.format_currency(installment.paid_amount))
+            paid_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            self.table.setItem(row, 3, paid_item)
+
+            # المبلغ المتبقي
+            remaining_item = QTableWidgetItem(NumberHelper.format_currency(installment.remaining_amount))
+            remaining_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            self.table.setItem(row, 4, remaining_item)
             
             # الدورية
             frequency_map = {"monthly": "شهري", "weekly": "أسبوعي", "yearly": "سنوي"}
             frequency_text = frequency_map.get(installment.frequency, installment.frequency)
-            self.table.setItem(row, 3, QTableWidgetItem(frequency_text))
+            self.table.setItem(row, 5, QTableWidgetItem(frequency_text))
             
             # الوصف
-            self.table.setItem(row, 4, QTableWidgetItem(installment.description))
+            self.table.setItem(row, 6, QTableWidgetItem(installment.description))
             
             # نسبة الإنجاز
             percentage = NumberHelper.format_percentage(installment.completion_percentage)
@@ -350,7 +360,7 @@ class InstallmentsView(QMainWindow):
                 progress_item.setBackground(Qt.red)
                 progress_item.setForeground(Qt.black)
             
-            self.table.setItem(row, 5, progress_item)
+            self.table.setItem(row, 7, progress_item)
             
             # الحالة
             status = "مكتمل" if installment.is_completed else "نشط"
@@ -363,11 +373,11 @@ class InstallmentsView(QMainWindow):
                 status_item.setBackground(Qt.blue)
                 status_item.setForeground(Qt.black)
             
-            self.table.setItem(row, 6, status_item)
+            self.table.setItem(row, 8, status_item)
             
             # تاريخ البداية
             start_date = DateHelper.format_date(installment.start_date) if installment.start_date else "غير محدد"
-            self.table.setItem(row, 7, QTableWidgetItem(start_date))
+            self.table.setItem(row, 9, QTableWidgetItem(start_date))
         
         # ضبط عرض الأعمدة
         header = self.table.horizontalHeader()
