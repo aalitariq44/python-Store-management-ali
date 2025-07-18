@@ -6,9 +6,9 @@
 
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
                              QPushButton, QTableWidget, QTableWidgetItem, QLineEdit,
-                             QLabel, QHeaderView, QFrame, QTabWidget, QTextEdit)
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QFont
+                             QLabel, QHeaderView, QFrame, QTabWidget, QTextEdit, QComboBox, QInputDialog, QCheckBox)
+from PyQt5.QtCore import Qt, pyqtSignal, QTimer
+from PyQt5.QtGui import QFont, QColor
 from database.models import Person
 from controllers.person_controller import PersonController
 from controllers.debt_controller import DebtController
@@ -18,6 +18,7 @@ from utils.helpers import MessageHelper, AppHelper, TableHelper, DateHelper, Num
 from views.dialogs.add_debt_dialog import AddDebtDialog
 from views.dialogs.add_installment_dialog import AddInstallmentDialog
 from views.dialogs.add_internet_dialog import AddInternetDialog
+from views.dialogs.installment_details_dialog import InstallmentDetailsDialog
 
 
 class PersonDetailsView(QMainWindow):
@@ -238,50 +239,62 @@ class PersonDetailsView(QMainWindow):
         """
         tab = QWidget()
         layout = QVBoxLayout(tab)
+        layout.setSpacing(10)
+
+        # شريط الأدوات والفلترة
+        toolbar_frame = QFrame()
+        toolbar_layout = QHBoxLayout(toolbar_frame)
+
+        # البحث
+        toolbar_layout.addWidget(QLabel("البحث:"))
+        self.debt_search_input = QLineEdit()
+        self.debt_search_input.setPlaceholderText("ابحث في الوصف أو المبلغ...")
+        self.debt_search_input.setMaximumWidth(250)
+        toolbar_layout.addWidget(self.debt_search_input)
+
+        # فلتر الحالة
+        toolbar_layout.addWidget(QLabel("الحالة:"))
+        self.debt_status_filter = QComboBox()
+        self.debt_status_filter.addItems(["الكل", "غير مدفوع", "مدفوع", "متأخر"])
+        self.debt_status_filter.setMaximumWidth(120)
+        toolbar_layout.addWidget(self.debt_status_filter)
         
-        # شريط الأدوات
-        toolbar = QHBoxLayout()
-        
+        toolbar_layout.addStretch()
+
+        # الأزرار
         self.add_debt_btn = QPushButton("إضافة دين")
         self.edit_debt_btn = QPushButton("تعديل")
         self.delete_debt_btn = QPushButton("حذف")
         self.mark_paid_btn = QPushButton("وضع علامة مدفوع")
-        
-        # تنسيق الأزرار
-        for btn in [self.add_debt_btn, self.edit_debt_btn, self.delete_debt_btn, self.mark_paid_btn]:
+        self.debt_refresh_btn = QPushButton("تحديث")
+
+        buttons = [self.add_debt_btn, self.edit_debt_btn, self.delete_debt_btn, self.mark_paid_btn, self.debt_refresh_btn]
+        for btn in buttons:
             btn.setMinimumHeight(35)
             btn.setStyleSheet("""
                 QPushButton {
-                    background-color: #007bff;
-                    color: white;
-                    border: none;
-                    border-radius: 5px;
-                    padding: 8px 16px;
-                    font-weight: bold;
+                    background-color: #007bff; color: white; border: none;
+                    border-radius: 5px; padding: 8px 16px; font-weight: bold;
                 }
-                QPushButton:hover {
-                    background-color: #0056b3;
-                }
-                QPushButton:disabled {
-                    background-color: #6c757d;
-                }
+                QPushButton:hover { background-color: #0056b3; }
+                QPushButton:disabled { background-color: #6c757d; }
             """)
         
         self.delete_debt_btn.setStyleSheet(self.delete_debt_btn.styleSheet().replace("#007bff", "#dc3545").replace("#0056b3", "#c82333"))
         self.mark_paid_btn.setStyleSheet(self.mark_paid_btn.styleSheet().replace("#007bff", "#28a745").replace("#0056b3", "#218838"))
-        
-        # تعطيل الأزرار في البداية
+        self.debt_refresh_btn.setStyleSheet(self.debt_refresh_btn.styleSheet().replace("#007bff", "#6c757d").replace("#0056b3", "#5a6268"))
+
         self.edit_debt_btn.setEnabled(False)
         self.delete_debt_btn.setEnabled(False)
         self.mark_paid_btn.setEnabled(False)
+
+        toolbar_layout.addWidget(self.add_debt_btn)
+        toolbar_layout.addWidget(self.edit_debt_btn)
+        toolbar_layout.addWidget(self.delete_debt_btn)
+        toolbar_layout.addWidget(self.mark_paid_btn)
+        toolbar_layout.addWidget(self.debt_refresh_btn)
         
-        toolbar.addWidget(self.add_debt_btn)
-        toolbar.addWidget(self.edit_debt_btn)
-        toolbar.addWidget(self.delete_debt_btn)
-        toolbar.addWidget(self.mark_paid_btn)
-        toolbar.addStretch()
-        
-        layout.addLayout(toolbar)
+        layout.addWidget(toolbar_frame)
         
         # جدول الديون
         self.debts_table = QTableWidget()
@@ -290,9 +303,26 @@ class PersonDetailsView(QMainWindow):
         
         self.debts_table.setAlternatingRowColors(True)
         self.debts_table.setSelectionBehavior(QTableWidget.SelectRows)
-        self.debts_table.setColumnHidden(0, True)  # إخفاء عمود المعرف
+        self.debts_table.setColumnHidden(0, True)
         
         layout.addWidget(self.debts_table)
+
+        # شريط الحالة
+        status_frame = QFrame()
+        status_frame.setStyleSheet("background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 10px;")
+        status_layout = QHBoxLayout(status_frame)
+        
+        self.person_total_debts_label = QLabel("إجمالي الديون: -")
+        self.person_unpaid_debts_label = QLabel("غير مدفوع: -")
+        self.person_paid_debts_label = QLabel("مدفوع: -")
+        self.person_overdue_debts_label = QLabel("متأخر: -")
+        
+        for label in [self.person_total_debts_label, self.person_unpaid_debts_label, self.person_paid_debts_label, self.person_overdue_debts_label]:
+            label.setStyleSheet("font-weight: bold; color: #495057;")
+            status_layout.addWidget(label)
+        
+        status_layout.addStretch()
+        layout.addWidget(status_frame)
         
         return tab
     
@@ -305,61 +335,92 @@ class PersonDetailsView(QMainWindow):
         """
         tab = QWidget()
         layout = QVBoxLayout(tab)
+        layout.setSpacing(10)
+
+        # شريط الأدوات والفلترة
+        toolbar_frame = QFrame()
+        toolbar_layout = QHBoxLayout(toolbar_frame)
+
+        toolbar_layout.addWidget(QLabel("البحث:"))
+        self.inst_search_input = QLineEdit()
+        self.inst_search_input.setPlaceholderText("ابحث في الوصف أو المبلغ...")
+        self.inst_search_input.setMaximumWidth(250)
+        toolbar_layout.addWidget(self.inst_search_input)
+
+        toolbar_layout.addWidget(QLabel("الحالة:"))
+        self.inst_status_filter = QComboBox()
+        self.inst_status_filter.addItems(["الكل", "نشط", "مكتمل"])
+        self.inst_status_filter.setMaximumWidth(120)
+        toolbar_layout.addWidget(self.inst_status_filter)
         
-        # شريط الأدوات
-        toolbar = QHBoxLayout()
-        
+        toolbar_layout.addStretch()
+
+        # الأزرار
         self.add_installment_btn = QPushButton("إضافة قسط")
         self.edit_installment_btn = QPushButton("تعديل")
         self.delete_installment_btn = QPushButton("حذف")
         self.add_payment_btn = QPushButton("إضافة دفعة")
-        
-        # تنسيق الأزرار
-        for btn in [self.add_installment_btn, self.edit_installment_btn, self.delete_installment_btn, self.add_payment_btn]:
+        self.installment_details_btn = QPushButton("عرض التفاصيل")
+        self.installment_refresh_btn = QPushButton("تحديث")
+
+        buttons = [self.add_installment_btn, self.edit_installment_btn, self.delete_installment_btn, self.add_payment_btn, self.installment_details_btn, self.installment_refresh_btn]
+        for btn in buttons:
             btn.setMinimumHeight(35)
             btn.setStyleSheet("""
                 QPushButton {
-                    background-color: #f39c12;
-                    color: white;
-                    border: none;
-                    border-radius: 5px;
-                    padding: 8px 16px;
-                    font-weight: bold;
+                    background-color: #f39c12; color: white; border: none;
+                    border-radius: 5px; padding: 8px 16px; font-weight: bold;
                 }
-                QPushButton:hover {
-                    background-color: #e67e22;
-                }
-                QPushButton:disabled {
-                    background-color: #6c757d;
-                }
+                QPushButton:hover { background-color: #e67e22; }
+                QPushButton:disabled { background-color: #6c757d; }
             """)
         
         self.delete_installment_btn.setStyleSheet(self.delete_installment_btn.styleSheet().replace("#f39c12", "#dc3545").replace("#e67e22", "#c82333"))
         self.add_payment_btn.setStyleSheet(self.add_payment_btn.styleSheet().replace("#f39c12", "#28a745").replace("#e67e22", "#218838"))
-        
-        # تعطيل الأزرار في البداية
+        self.installment_refresh_btn.setStyleSheet(self.installment_refresh_btn.styleSheet().replace("#f39c12", "#6c757d").replace("#e67e22", "#5a6268"))
+
         self.edit_installment_btn.setEnabled(False)
         self.delete_installment_btn.setEnabled(False)
         self.add_payment_btn.setEnabled(False)
+        self.installment_details_btn.setEnabled(False)
+
+        toolbar_layout.addWidget(self.add_installment_btn)
+        toolbar_layout.addWidget(self.edit_installment_btn)
+        toolbar_layout.addWidget(self.delete_installment_btn)
+        toolbar_layout.addWidget(self.add_payment_btn)
+        toolbar_layout.addWidget(self.installment_details_btn)
+        toolbar_layout.addWidget(self.installment_refresh_btn)
         
-        toolbar.addWidget(self.add_installment_btn)
-        toolbar.addWidget(self.edit_installment_btn)
-        toolbar.addWidget(self.delete_installment_btn)
-        toolbar.addWidget(self.add_payment_btn)
-        toolbar.addStretch()
-        
-        layout.addLayout(toolbar)
+        layout.addWidget(toolbar_frame)
         
         # جدول الأقساط
         self.installments_table = QTableWidget()
-        headers = ["المعرف", "المبلغ الإجمالي", "الدورية", "الوصف", "نسبة الإنجاز", "الحالة"]
+        headers = ["المعرف", "المبلغ الإجمالي", "المدفوع", "المتبقي", "الوصف", "نسبة الإنجاز", "الحالة", "تاريخ البداية"]
         TableHelper.setup_table_headers(self.installments_table, headers)
         
         self.installments_table.setAlternatingRowColors(True)
         self.installments_table.setSelectionBehavior(QTableWidget.SelectRows)
-        self.installments_table.setColumnHidden(0, True)  # إخفاء عمود المعرف
+        self.installments_table.setColumnHidden(0, True)
         
         layout.addWidget(self.installments_table)
+
+        # شريط الحالة
+        status_frame = QFrame()
+        status_frame.setStyleSheet("background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 10px;")
+        status_layout = QHBoxLayout(status_frame)
+        
+        self.person_total_installments_label = QLabel("إجمالي الأقساط: -")
+        self.person_active_installments_label = QLabel("نشط: -")
+        self.person_completed_installments_label = QLabel("مكتمل: -")
+        self.person_total_amount_label = QLabel("إجمالي المبالغ: -")
+        self.person_paid_amount_label = QLabel("المدفوع: -")
+        
+        for label in [self.person_total_installments_label, self.person_active_installments_label, self.person_completed_installments_label, self.person_total_amount_label, self.person_paid_amount_label]:
+            label.setStyleSheet("font-weight: bold; color: #495057;")
+            status_layout.addWidget(label)
+        
+        status_layout.addStretch()
+        layout.addWidget(status_frame)
         
         return tab
     
@@ -390,60 +451,86 @@ class PersonDetailsView(QMainWindow):
         """
         tab = QWidget()
         layout = QVBoxLayout(tab)
-        
+        layout.setSpacing(10)
+
         # شريط الأدوات
-        toolbar = QHBoxLayout()
+        toolbar_frame = QFrame()
+        toolbar_layout = QHBoxLayout(toolbar_frame)
+
+        toolbar_layout.addWidget(QLabel("البحث:"))
+        self.net_search_input = QLineEdit()
+        self.net_search_input.setPlaceholderText("ابحث باسم الباقة...")
+        self.net_search_input.setMaximumWidth(250)
+        toolbar_layout.addWidget(self.net_search_input)
+
+        toolbar_layout.addWidget(QLabel("الحالة:"))
+        self.net_status_filter = QComboBox()
+        self.net_status_filter.addItems(["الكل", "نشط", "منتهي", "لم يبدأ بعد"])
+        self.net_status_filter.setMaximumWidth(120)
+        toolbar_layout.addWidget(self.net_status_filter)
         
+        toolbar_layout.addStretch()
+
         self.add_internet_btn = QPushButton("إضافة اشتراك")
         self.edit_internet_btn = QPushButton("تعديل")
         self.delete_internet_btn = QPushButton("حذف")
-        self.toggle_active_btn = QPushButton("تفعيل/إلغاء")
-        
-        # تنسيق الأزرار
-        for btn in [self.add_internet_btn, self.edit_internet_btn, self.delete_internet_btn, self.toggle_active_btn]:
+        self.mark_internet_paid_btn = QPushButton("وضع علامة كمدفوع")
+        self.internet_refresh_btn = QPushButton("تحديث")
+
+        buttons = [self.add_internet_btn, self.edit_internet_btn, self.delete_internet_btn, self.mark_internet_paid_btn, self.internet_refresh_btn]
+        for btn in buttons:
             btn.setMinimumHeight(35)
             btn.setStyleSheet("""
                 QPushButton {
-                    background-color: #27ae60;
-                    color: white;
-                    border: none;
-                    border-radius: 5px;
-                    padding: 8px 16px;
-                    font-weight: bold;
+                    background-color: #6c5ce7; color: white; border: none;
+                    border-radius: 5px; padding: 8px 16px; font-weight: bold;
                 }
-                QPushButton:hover {
-                    background-color: #229954;
-                }
-                QPushButton:disabled {
-                    background-color: #6c757d;
-                }
+                QPushButton:hover { background-color: #5a4fcf; }
+                QPushButton:disabled { background-color: #6c757d; }
             """)
         
-        self.delete_internet_btn.setStyleSheet(self.delete_internet_btn.styleSheet().replace("#27ae60", "#dc3545").replace("#229954", "#c82333"))
-        
-        # تعطيل الأزرار في البداية
+        self.delete_internet_btn.setStyleSheet(self.delete_internet_btn.styleSheet().replace("#6c5ce7", "#dc3545").replace("#5a4fcf", "#c82333"))
+        self.mark_internet_paid_btn.setStyleSheet(self.mark_internet_paid_btn.styleSheet().replace("#6c5ce7", "#17a2b8").replace("#5a4fcf", "#138496"))
+        self.internet_refresh_btn.setStyleSheet(self.internet_refresh_btn.styleSheet().replace("#6c5ce7", "#6c757d").replace("#5a4fcf", "#5a6268"))
+
         self.edit_internet_btn.setEnabled(False)
         self.delete_internet_btn.setEnabled(False)
-        self.toggle_active_btn.setEnabled(False)
+        self.mark_internet_paid_btn.setEnabled(False)
+
+        toolbar_layout.addWidget(self.add_internet_btn)
+        toolbar_layout.addWidget(self.edit_internet_btn)
+        toolbar_layout.addWidget(self.delete_internet_btn)
+        toolbar_layout.addWidget(self.mark_internet_paid_btn)
+        toolbar_layout.addWidget(self.internet_refresh_btn)
         
-        toolbar.addWidget(self.add_internet_btn)
-        toolbar.addWidget(self.edit_internet_btn)
-        toolbar.addWidget(self.delete_internet_btn)
-        toolbar.addWidget(self.toggle_active_btn)
-        toolbar.addStretch()
+        layout.addWidget(toolbar_frame)
         
-        layout.addLayout(toolbar)
-        
-        # جدول اشتراكات الإنترنت
+        # جدول الاشتراكات
         self.internet_table = QTableWidget()
-        headers = ["المعرف", "اسم الباقة", "الرسوم الشهرية", "تاريخ البداية", "تاريخ النهاية", "الحالة"]
+        headers = ["المعرف", "اسم الباقة", "التكلفة", "تاريخ البداية", "تاريخ النهاية", "الحالة", "الدفع", "الأيام المتبقية"]
         TableHelper.setup_table_headers(self.internet_table, headers)
         
         self.internet_table.setAlternatingRowColors(True)
         self.internet_table.setSelectionBehavior(QTableWidget.SelectRows)
-        self.internet_table.setColumnHidden(0, True)  # إخفاء عمود المعرف
+        self.internet_table.setColumnHidden(0, True)
         
         layout.addWidget(self.internet_table)
+
+        # شريط الحالة
+        status_frame = QFrame()
+        status_frame.setStyleSheet("background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 10px;")
+        status_layout = QHBoxLayout(status_frame)
+        
+        self.person_total_subs_label = QLabel("إجمالي الاشتراكات: -")
+        self.person_active_subs_label = QLabel("نشط: -")
+        self.person_expired_subs_label = QLabel("منتهي: -")
+        
+        for label in [self.person_total_subs_label, self.person_active_subs_label, self.person_expired_subs_label]:
+            label.setStyleSheet("font-weight: bold; color: #495057;")
+            status_layout.addWidget(label)
+        
+        status_layout.addStretch()
+        layout.addWidget(status_frame)
         
         return tab
     
@@ -457,6 +544,10 @@ class PersonDetailsView(QMainWindow):
         self.delete_debt_btn.clicked.connect(self.delete_debt)
         self.mark_paid_btn.clicked.connect(self.mark_debt_paid)
         self.debts_table.selectionModel().selectionChanged.connect(self.on_debt_selection_changed)
+        self.debts_table.doubleClicked.connect(self.edit_debt)
+        self.debt_refresh_btn.clicked.connect(self.load_debts)
+        self.debt_search_input.textChanged.connect(self.filter_debts)
+        self.debt_status_filter.currentTextChanged.connect(self.filter_debts)
         
         # أحداث الأقساط
         self.add_installment_btn.clicked.connect(self.add_installment)
@@ -464,13 +555,22 @@ class PersonDetailsView(QMainWindow):
         self.delete_installment_btn.clicked.connect(self.delete_installment)
         self.add_payment_btn.clicked.connect(self.add_installment_payment)
         self.installments_table.selectionModel().selectionChanged.connect(self.on_installment_selection_changed)
+        self.installments_table.doubleClicked.connect(self.show_installment_details)
+        self.installment_details_btn.clicked.connect(self.show_installment_details)
+        self.installment_refresh_btn.clicked.connect(self.load_installments)
+        self.inst_search_input.textChanged.connect(self.filter_installments)
+        self.inst_status_filter.currentTextChanged.connect(self.filter_installments)
         
         # أحداث اشتراكات الإنترنت
         self.add_internet_btn.clicked.connect(self.add_internet_subscription)
         self.edit_internet_btn.clicked.connect(self.edit_internet_subscription)
         self.delete_internet_btn.clicked.connect(self.delete_internet_subscription)
-        self.toggle_active_btn.clicked.connect(self.toggle_internet_subscription)
+        self.mark_internet_paid_btn.clicked.connect(self.mark_subscription_paid)
+        self.internet_refresh_btn.clicked.connect(self.load_internet_subscriptions)
         self.internet_table.selectionModel().selectionChanged.connect(self.on_internet_selection_changed)
+        self.internet_table.doubleClicked.connect(self.edit_internet_subscription)
+        self.net_search_input.textChanged.connect(self.filter_internet_subscriptions)
+        self.net_status_filter.currentTextChanged.connect(self.filter_internet_subscriptions)
     
     def load_all_data(self):
         """
@@ -487,44 +587,101 @@ class PersonDetailsView(QMainWindow):
         """
         try:
             debts = self.debt_controller.get_debts_by_person(self.person.id)
-            
-            self.debts_table.setRowCount(len(debts))
-            
-            for row, debt in enumerate(debts):
-                # إخفاء المعرف في عمود مخفي
-                id_item = QTableWidgetItem(str(debt.id))
-                id_item.setData(Qt.UserRole, debt)
-                self.debts_table.setItem(row, 0, id_item)
-                
-                # المبلغ
-                amount_item = QTableWidgetItem(NumberHelper.format_currency(debt.amount))
-                amount_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
-                self.debts_table.setItem(row, 1, amount_item)
-                
-                # الوصف
-                self.debts_table.setItem(row, 2, QTableWidgetItem(debt.description))
-                
-                # تاريخ الاستحقاق
-                due_date = DateHelper.format_date(debt.due_date) if debt.due_date else "غير محدد"
-                self.debts_table.setItem(row, 3, QTableWidgetItem(due_date))
-                
-                # الحالة
-                status = "مدفوع" if debt.is_paid else "غير مدفوع"
-                status_item = QTableWidgetItem(status)
-                if debt.is_paid:
-                    status_item.setBackground(Qt.green)
-                    status_item.setForeground(Qt.white)
-                else:
-                    status_item.setBackground(Qt.red)
-                    status_item.setForeground(Qt.white)
-                self.debts_table.setItem(row, 4, status_item)
-                
-                # تاريخ الإضافة
-                created_date = DateHelper.format_datetime(debt.created_at) if debt.created_at else ""
-                self.debts_table.setItem(row, 5, QTableWidgetItem(created_date))
-            
+            self.person_all_debts = debts
+            self.filter_debts() # يقوم بالفلترة وعرض البيانات وتحديث الإحصائيات
         except Exception as e:
             MessageHelper.show_error(self, "خطأ", f"حدث خطأ أثناء تحميل الديون: {str(e)}")
+
+    def populate_debts_table(self, debts: list):
+        """
+        ملء جدول الديون بالبيانات
+        """
+        self.debts_table.setRowCount(len(debts))
+        
+        for row, debt in enumerate(debts):
+            id_item = QTableWidgetItem(str(debt.id))
+            id_item.setData(Qt.UserRole, debt)
+            self.debts_table.setItem(row, 0, id_item)
+            
+            amount_item = QTableWidgetItem(NumberHelper.format_currency(debt.amount))
+            amount_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            self.debts_table.setItem(row, 1, amount_item)
+            
+            self.debts_table.setItem(row, 2, QTableWidgetItem(debt.description))
+            
+            due_date = DateHelper.format_date(debt.due_date) if debt.due_date else "غير محدد"
+            self.debts_table.setItem(row, 3, QTableWidgetItem(due_date))
+            
+            status_item = QTableWidgetItem()
+            from datetime import date
+            is_overdue = not debt.is_paid and debt.due_date and debt.due_date < date.today()
+
+            if debt.is_paid:
+                status_item.setText("مدفوع")
+                status_item.setForeground(QColor("#28a745"))
+            elif is_overdue:
+                status_item.setText("متأخر")
+                status_item.setForeground(QColor("#dc3545"))
+            else:
+                status_item.setText("غير مدفوع")
+                status_item.setForeground(QColor("#ffc107"))
+            self.debts_table.setItem(row, 4, status_item)
+            
+            created_date = DateHelper.format_datetime(debt.created_at) if debt.created_at else ""
+            self.debts_table.setItem(row, 5, QTableWidgetItem(created_date))
+
+        self.debts_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+
+    def filter_debts(self):
+        """
+        فلترة ديون الزبون
+        """
+        if not hasattr(self, 'person_all_debts'):
+            return
+        
+        search_term = self.debt_search_input.text().strip().lower()
+        status_filter = self.debt_status_filter.currentText()
+        
+        filtered = []
+        from datetime import date
+
+        for debt in self.person_all_debts:
+            if search_term and not (search_term in debt.description.lower() or search_term in str(debt.amount)):
+                continue
+            
+            is_overdue = not debt.is_paid and debt.due_date and debt.due_date < date.today()
+
+            if status_filter == "مدفوع" and not debt.is_paid:
+                continue
+            if status_filter == "غير مدفوع" and (debt.is_paid or is_overdue):
+                continue
+            if status_filter == "متأخر" and not is_overdue:
+                continue
+            
+            filtered.append(debt)
+        
+        self.populate_debts_table(filtered)
+        self.update_debts_statistics()
+
+    def update_debts_statistics(self):
+        """
+        تحديث إحصائيات ديون الزبون
+        """
+        if not hasattr(self, 'person_all_debts'):
+            return
+
+        total_amount = sum(d.amount for d in self.person_all_debts)
+        paid_amount = sum(d.amount for d in self.person_all_debts if d.is_paid)
+        unpaid_amount = total_amount - paid_amount
+        
+        from datetime import date
+        overdue_count = sum(1 for d in self.person_all_debts if not d.is_paid and d.due_date and d.due_date < date.today())
+        overdue_amount = sum(d.amount for d in self.person_all_debts if not d.is_paid and d.due_date and d.due_date < date.today())
+
+        self.person_total_debts_label.setText(f"الإجمالي: {len(self.person_all_debts)} ({NumberHelper.format_currency(total_amount)})")
+        self.person_paid_debts_label.setText(f"مدفوع: {sum(1 for d in self.person_all_debts if d.is_paid)} ({NumberHelper.format_currency(paid_amount)})")
+        self.person_unpaid_debts_label.setText(f"غير مدفوع: {sum(1 for d in self.person_all_debts if not d.is_paid and not (d.due_date and d.due_date < date.today()))} ({NumberHelper.format_currency(unpaid_amount - overdue_amount)})")
+        self.person_overdue_debts_label.setText(f"متأخر: {overdue_count} ({NumberHelper.format_currency(overdue_amount)})")
     
     def load_installments(self):
         """
@@ -532,45 +689,98 @@ class PersonDetailsView(QMainWindow):
         """
         try:
             installments = self.installment_controller.get_installments_by_person(self.person.id)
-            
-            self.installments_table.setRowCount(len(installments))
-            
-            for row, installment in enumerate(installments):
-                # إخفاء المعرف في عمود مخفي
-                id_item = QTableWidgetItem(str(installment.id))
-                id_item.setData(Qt.UserRole, installment)
-                self.installments_table.setItem(row, 0, id_item)
-                
-                # المبلغ الإجمالي
-                total_item = QTableWidgetItem(NumberHelper.format_currency(installment.total_amount))
-                total_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
-                self.installments_table.setItem(row, 1, total_item)
-                
-                # الدورية
-                frequency_map = {"monthly": "شهري", "weekly": "أسبوعي", "yearly": "سنوي"}
-                frequency_text = frequency_map.get(installment.frequency, installment.frequency)
-                self.installments_table.setItem(row, 2, QTableWidgetItem(frequency_text))
-                
-                # الوصف
-                self.installments_table.setItem(row, 3, QTableWidgetItem(installment.description))
-                
-                # نسبة الإنجاز
-                percentage = NumberHelper.format_percentage(installment.completion_percentage)
-                self.installments_table.setItem(row, 4, QTableWidgetItem(percentage))
-                
-                # الحالة
-                status = "مكتمل" if installment.is_completed else "نشط"
-                status_item = QTableWidgetItem(status)
-                if installment.is_completed:
-                    status_item.setBackground(Qt.green)
-                    status_item.setForeground(Qt.white)
-                else:
-                    status_item.setBackground(Qt.blue)
-                    status_item.setForeground(Qt.white)
-                self.installments_table.setItem(row, 5, status_item)
-            
+            self.person_all_installments = installments
+            self.filter_installments()
         except Exception as e:
             MessageHelper.show_error(self, "خطأ", f"حدث خطأ أثناء تحميل الأقساط: {str(e)}")
+
+    def populate_installments_table(self, installments: list):
+        """
+        ملء جدول الأقساط بالبيانات
+        """
+        self.installments_table.setRowCount(len(installments))
+        
+        for row, inst in enumerate(installments):
+            id_item = QTableWidgetItem(str(inst.id))
+            id_item.setData(Qt.UserRole, inst)
+            self.installments_table.setItem(row, 0, id_item)
+            
+            self.installments_table.setItem(row, 1, QTableWidgetItem(NumberHelper.format_currency(inst.total_amount)))
+            self.installments_table.setItem(row, 2, QTableWidgetItem(NumberHelper.format_currency(inst.paid_amount)))
+            self.installments_table.setItem(row, 3, QTableWidgetItem(NumberHelper.format_currency(inst.remaining_amount)))
+            self.installments_table.setItem(row, 4, QTableWidgetItem(inst.description))
+            
+            percentage = NumberHelper.format_percentage(inst.completion_percentage)
+            progress_item = QTableWidgetItem(percentage)
+            progress_item.setTextAlignment(Qt.AlignCenter)
+            
+            # تلوين نسبة الإنجاز
+            if inst.completion_percentage >= 100:
+                progress_item.setBackground(QColor("#28a745"))
+                progress_item.setForeground(QColor("white"))
+            elif inst.completion_percentage >= 50:
+                progress_item.setBackground(QColor("#ffc107"))
+                progress_item.setForeground(QColor("black"))
+            else:
+                progress_item.setBackground(QColor("#dc3545"))
+                progress_item.setForeground(QColor("white"))
+
+            self.installments_table.setItem(row, 5, progress_item)
+            
+            status = "مكتمل" if inst.is_completed else "نشط"
+            status_item = QTableWidgetItem(status)
+            if inst.is_completed:
+                status_item.setBackground(QColor("#28a745"))
+                status_item.setForeground(QColor("white"))
+            else:
+                status_item.setBackground(QColor("#007bff"))
+                status_item.setForeground(QColor("white"))
+
+            self.installments_table.setItem(row, 6, status_item)
+            
+            start_date = DateHelper.format_date(inst.start_date) if inst.start_date else "غير محدد"
+            self.installments_table.setItem(row, 7, QTableWidgetItem(start_date))
+
+        self.installments_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
+
+    def filter_installments(self):
+        """
+        فلترة أقساط الزبون
+        """
+        if not hasattr(self, 'person_all_installments'):
+            return
+        
+        search_term = self.inst_search_input.text().strip().lower()
+        status_filter = self.inst_status_filter.currentText()
+        
+        filtered = [
+            inst for inst in self.person_all_installments
+            if (not search_term or (search_term in inst.description.lower() or search_term in str(inst.total_amount)))
+            and (status_filter == "الكل" or (status_filter == "نشط" and not inst.is_completed) or (status_filter == "مكتمل" and inst.is_completed))
+        ]
+        
+        self.populate_installments_table(filtered)
+        self.update_installments_statistics()
+
+    def update_installments_statistics(self):
+        """
+        تحديث إحصائيات أقساط الزبون
+        """
+        if not hasattr(self, 'person_all_installments'):
+            return
+
+        all_installments = self.person_all_installments
+        total_count = len(all_installments)
+        active_count = sum(1 for i in all_installments if not i.is_completed)
+        completed_count = total_count - active_count
+        total_amount = sum(i.total_amount for i in all_installments)
+        paid_amount = sum(i.paid_amount for i in all_installments)
+
+        self.person_total_installments_label.setText(f"الإجمالي: {total_count}")
+        self.person_active_installments_label.setText(f"نشط: {active_count}")
+        self.person_completed_installments_label.setText(f"مكتمل: {completed_count}")
+        self.person_total_amount_label.setText(f"إجمالي المبالغ: {NumberHelper.format_currency(total_amount)}")
+        self.person_paid_amount_label.setText(f"المدفوع: {NumberHelper.format_currency(paid_amount)}")
     
     def load_internet_subscriptions(self):
         """
@@ -578,44 +788,98 @@ class PersonDetailsView(QMainWindow):
         """
         try:
             subscriptions = self.internet_controller.get_subscriptions_by_person(self.person.id)
-            
-            self.internet_table.setRowCount(len(subscriptions))
-            
-            for row, subscription in enumerate(subscriptions):
-                # إخفاء المعرف في عمود مخفي
-                id_item = QTableWidgetItem(str(subscription.id))
-                id_item.setData(Qt.UserRole, subscription)
-                self.internet_table.setItem(row, 0, id_item)
-                
-                # اسم الباقة
-                self.internet_table.setItem(row, 1, QTableWidgetItem(subscription.plan_name))
-                
-                # الرسوم الشهرية
-                fee_item = QTableWidgetItem(NumberHelper.format_currency(subscription.monthly_fee))
-                fee_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
-                self.internet_table.setItem(row, 2, fee_item)
-                
-                # تاريخ البداية
-                start_date = DateHelper.format_date(subscription.start_date) if subscription.start_date else "غير محدد"
-                self.internet_table.setItem(row, 3, QTableWidgetItem(start_date))
-                
-                # تاريخ النهاية
-                end_date = DateHelper.format_date(subscription.end_date) if subscription.end_date else "غير محدد"
-                self.internet_table.setItem(row, 4, QTableWidgetItem(end_date))
-                
-                # الحالة
-                status = "نشط" if subscription.is_active else "غير نشط"
-                status_item = QTableWidgetItem(status)
-                if subscription.is_active:
-                    status_item.setBackground(Qt.green)
-                    status_item.setForeground(Qt.white)
-                else:
-                    status_item.setBackground(Qt.red)
-                    status_item.setForeground(Qt.white)
-                self.internet_table.setItem(row, 5, status_item)
-            
+            self.person_all_subscriptions = subscriptions
+            self.filter_internet_subscriptions()
         except Exception as e:
             MessageHelper.show_error(self, "خطأ", f"حدث خطأ أثناء تحميل اشتراكات الإنترنت: {str(e)}")
+
+    def populate_internet_table(self, subscriptions: list):
+        """
+        ملء جدول اشتراكات الإنترنت بالبيانات
+        """
+        self.internet_table.setRowCount(len(subscriptions))
+        from datetime import date
+
+        for row, sub in enumerate(subscriptions):
+            id_item = QTableWidgetItem(str(sub.id))
+            id_item.setData(Qt.UserRole, sub)
+            self.internet_table.setItem(row, 0, id_item)
+            
+            self.internet_table.setItem(row, 1, QTableWidgetItem(sub.plan_name))
+            self.internet_table.setItem(row, 2, QTableWidgetItem(NumberHelper.format_currency(sub.monthly_fee)))
+            self.internet_table.setItem(row, 3, QTableWidgetItem(DateHelper.format_date(sub.start_date)))
+            self.internet_table.setItem(row, 4, QTableWidgetItem(DateHelper.format_date(sub.end_date)))
+
+            status_text, status_color = self.get_subscription_status_display(sub)
+            status_item = QTableWidgetItem(status_text)
+            status_item.setBackground(status_color)
+            self.internet_table.setItem(row, 5, status_item)
+
+            payment_text = "مدفوع" if sub.payment_status == 'paid' else "غير مدفوع"
+            payment_item = QTableWidgetItem(payment_text)
+            payment_item.setForeground(QColor("#28a745") if sub.payment_status == 'paid' else QColor("#dc3545"))
+            self.internet_table.setItem(row, 6, payment_item)
+
+            days_remaining = (sub.end_date - date.today()).days if sub.end_date else -1
+            days_item = QTableWidgetItem(str(days_remaining) if days_remaining >= 0 else "منتهي")
+            self.internet_table.setItem(row, 7, days_item)
+
+        self.internet_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+
+    def filter_internet_subscriptions(self):
+        """
+        فلترة اشتراكات الإنترنت للزبون
+        """
+        if not hasattr(self, 'person_all_subscriptions'):
+            return
+
+        search_term = self.net_search_input.text().strip().lower()
+        status_filter = self.net_status_filter.currentText()
+        
+        filtered = []
+        for sub in self.person_all_subscriptions:
+            if search_term and search_term not in sub.plan_name.lower():
+                continue
+            
+            status_text, _ = self.get_subscription_status_display(sub)
+            if status_filter != "الكل" and status_filter != status_text:
+                continue
+            
+            filtered.append(sub)
+        
+        self.populate_internet_table(filtered)
+        self.update_internet_statistics()
+
+    def update_internet_statistics(self):
+        """
+        تحديث إحصائيات اشتراكات الإنترنت للزبون
+        """
+        if not hasattr(self, 'person_all_subscriptions'):
+            return
+
+        total = len(self.person_all_subscriptions)
+        active = sum(1 for s in self.person_all_subscriptions if self.get_subscription_status_display(s)[0] == 'نشط')
+        expired = sum(1 for s in self.person_all_subscriptions if self.get_subscription_status_display(s)[0] == 'منتهي')
+
+        self.person_total_subs_label.setText(f"الإجمالي: {total}")
+        self.person_active_subs_label.setText(f"نشط: {active}")
+        self.person_expired_subs_label.setText(f"منتهي: {expired}")
+
+    def get_subscription_status_display(self, subscription):
+        """
+        الحصول على نص ولون حالة الاشتراك
+        """
+        from datetime import date
+        today = date.today()
+        if not subscription.end_date or not subscription.start_date:
+            return "غير محدد", QColor("gray")
+        
+        if subscription.end_date < today:
+            return "منتهي", QColor("red")
+        elif subscription.start_date <= today:
+            return "نشط", QColor("green")
+        else:
+            return "لم يبدأ بعد", QColor("blue")
     
     def on_debt_selection_changed(self):
         """
@@ -644,8 +908,8 @@ class PersonDetailsView(QMainWindow):
         has_selection = self.installments_table.currentRow() >= 0
         self.edit_installment_btn.setEnabled(has_selection)
         self.delete_installment_btn.setEnabled(has_selection)
+        self.installment_details_btn.setEnabled(has_selection)
         
-        # تفعيل زر "إضافة دفعة" للأقساط غير المكتملة فقط
         if has_selection:
             current_row = self.installments_table.currentRow()
             installment_item = self.installments_table.item(current_row, 0)
@@ -664,7 +928,17 @@ class PersonDetailsView(QMainWindow):
         has_selection = self.internet_table.currentRow() >= 0
         self.edit_internet_btn.setEnabled(has_selection)
         self.delete_internet_btn.setEnabled(has_selection)
-        self.toggle_active_btn.setEnabled(has_selection)
+        
+        if has_selection:
+            current_row = self.internet_table.currentRow()
+            item = self.internet_table.item(current_row, 0)
+            if item:
+                sub = item.data(Qt.UserRole)
+                self.mark_internet_paid_btn.setEnabled(sub and sub.payment_status == 'unpaid')
+            else:
+                self.mark_internet_paid_btn.setEnabled(False)
+        else:
+            self.mark_internet_paid_btn.setEnabled(False)
     
     # يمكنني إضافة باقي الدوال للتعامل مع العمليات (إضافة، تعديل، حذف) 
     # لكن سأكتفي بهذا القدر لتوفير المساحة
@@ -732,7 +1006,7 @@ class PersonDetailsView(QMainWindow):
         debt_item = self.debts_table.item(current_row, 0)
         debt = debt_item.data(Qt.UserRole)
         
-        if MessageHelper.confirm(self, "تأكيد", f"هل أنت متأكد من حذف الدين '{debt.description}'؟"):
+        if MessageHelper.show_question(self, "تأكيد", f"هل أنت متأكد من حذف الدين '{debt.description}'؟"):
             success, message = self.debt_controller.delete_debt(debt.id)
             
             if success:
@@ -753,7 +1027,7 @@ class PersonDetailsView(QMainWindow):
         debt_item = self.debts_table.item(current_row, 0)
         debt = debt_item.data(Qt.UserRole)
         
-        if MessageHelper.confirm(self, "تأكيد", f"هل أنت متأكد من وضع علامة 'مدفوع' على الدين '{debt.description}'؟"):
+        if MessageHelper.show_question(self, "تأكيد", f"هل أنت متأكد من وضع علامة 'مدفوع' على الدين '{debt.description}'؟"):
             success, message = self.debt_controller.mark_debt_as_paid(debt.id)
             
             if success:
@@ -774,7 +1048,6 @@ class PersonDetailsView(QMainWindow):
             success, message, _ = self.installment_controller.add_installment(
                 self.person.id,
                 data['total_amount'],
-                data['frequency'],
                 data['description'],
                 data['start_date']
             )
@@ -804,7 +1077,6 @@ class PersonDetailsView(QMainWindow):
             success, message = self.installment_controller.update_installment(
                 installment.id,
                 data['total_amount'],
-                data['frequency'],
                 data['description'],
                 data['start_date']
             )
@@ -827,7 +1099,7 @@ class PersonDetailsView(QMainWindow):
         item = self.installments_table.item(current_row, 0)
         installment = item.data(Qt.UserRole)
         
-        if MessageHelper.confirm(self, "تأكيد", f"هل أنت متأكد من حذف القسط '{installment.description}'؟"):
+        if MessageHelper.show_question(self, "تأكيد", f"هل أنت متأكد من حذف القسط '{installment.description}'؟"):
             success, message = self.installment_controller.delete_installment(installment.id)
             
             if success:
@@ -838,8 +1110,58 @@ class PersonDetailsView(QMainWindow):
                 MessageHelper.show_error(self, "خطأ", message)
 
     def add_installment_payment(self):
-        # هذه الوظيفة تتطلب نافذة جديدة لإضافة دفعة، سيتم تبسيطها حاليًا
-        MessageHelper.show_info(self, "غير متاح", "وظيفة إضافة دفعة غير متاحة حاليًا.")
+        """
+        إضافة دفعة للقسط المحدد
+        """
+        current_row = self.installments_table.currentRow()
+        if current_row < 0:
+            return
+            
+        item = self.installments_table.item(current_row, 0)
+        installment = item.data(Qt.UserRole)
+
+        if not installment or installment.is_completed:
+            return
+
+        remaining = installment.remaining_amount
+        payment_amount, ok = QInputDialog.getDouble(
+            self, "إضافة دفعة", 
+            f"أدخل مبلغ الدفعة:\nالمبلغ المتبقي: {NumberHelper.format_currency(remaining)}",
+            0.0, 0.0, remaining, 2
+        )
+        
+        if ok and payment_amount > 0:
+            success, message = self.installment_controller.add_payment(installment.id, payment_amount)
+            
+            if success:
+                MessageHelper.show_info(self, "نجح", message)
+                self.load_installments()
+                self.update_stats()
+            else:
+                MessageHelper.show_error(self, "خطأ", message)
+
+    def show_installment_details(self):
+        """
+        عرض تفاصيل القسط المحدد
+        """
+        current_row = self.installments_table.currentRow()
+        if current_row < 0:
+            return
+            
+        item = self.installments_table.item(current_row, 0)
+        installment = item.data(Qt.UserRole)
+        
+        updated_installment = self.installment_controller.get_installment_by_id(installment.id)
+        if not updated_installment:
+            MessageHelper.show_error(self, "خطأ", "لم يتم العثور على القسط.")
+            self.load_installments()
+            return
+        
+        dialog = InstallmentDetailsDialog(updated_installment, self.installment_controller.db, self)
+        dialog.exec_()
+        
+        self.load_installments()
+        self.update_stats()
 
     def add_internet_subscription(self):
         """
@@ -906,7 +1228,7 @@ class PersonDetailsView(QMainWindow):
         item = self.internet_table.item(current_row, 0)
         subscription = item.data(Qt.UserRole)
         
-        if MessageHelper.confirm(self, "تأكيد", f"هل أنت متأكد من حذف الاشتراك '{subscription.plan_name}'؟"):
+        if MessageHelper.show_question(self, "تأكيد", f"هل أنت متأكد من حذف الاشتراك '{subscription.plan_name}'؟"):
             success, message = self.internet_controller.delete_subscription(subscription.id)
             
             if success:
@@ -916,9 +1238,9 @@ class PersonDetailsView(QMainWindow):
             else:
                 MessageHelper.show_error(self, "خطأ", message)
 
-    def toggle_internet_subscription(self):
+    def mark_subscription_paid(self):
         """
-        تفعيل أو إلغاء تفعيل اشتراك الإنترنت
+        وضع علامة مدفوع على الاشتراك المحدد
         """
         current_row = self.internet_table.currentRow()
         if current_row < 0:
@@ -926,23 +1248,16 @@ class PersonDetailsView(QMainWindow):
             
         item = self.internet_table.item(current_row, 0)
         subscription = item.data(Qt.UserRole)
-        
-        if subscription.is_active:
-            action_text = "إلغاء تفعيل"
-            if MessageHelper.confirm(self, "تأكيد", f"هل أنت متأكد من {action_text} الاشتراك '{subscription.plan_name}'؟"):
-                success, message = self.internet_controller.deactivate_subscription(subscription.id)
-            else:
-                return
-        else:
-            action_text = "تفعيل"
-            if MessageHelper.confirm(self, "تأكيد", f"هل أنت متأكد من {action_text} الاشتراك '{subscription.plan_name}'؟"):
-                success, message = self.internet_controller.activate_subscription(subscription.id)
-            else:
-                return
 
-        if success:
-            MessageHelper.show_info(self, "نجح", message)
-            self.load_internet_subscriptions()
-            self.update_stats()
-        else:
-            MessageHelper.show_error(self, "خطأ", message)
+        if not subscription or subscription.payment_status == 'paid':
+            return
+
+        if MessageHelper.show_question(self, "تأكيد", f"هل أنت متأكد من وضع علامة 'مدفوع' على الاشتراك '{subscription.plan_name}'؟"):
+            success, message = self.internet_controller.update_subscription_payment_status(subscription.id, 'paid')
+            
+            if success:
+                MessageHelper.show_info(self, "نجح", message)
+                self.load_internet_subscriptions()
+                self.update_stats()
+            else:
+                MessageHelper.show_error(self, "خطأ", message)
