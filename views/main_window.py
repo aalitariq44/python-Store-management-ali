@@ -128,10 +128,11 @@ class MainWindow(QMainWindow):
         # العنوان الرئيسي
         title_label = QLabel("نظام إدارة محل كاظم السعدي")
         title_label.setAlignment(Qt.AlignCenter)
+        title_label.setObjectName("main_title_label")
         title_label.setStyleSheet("""
-            QLabel {
+            #main_title_label {
                 color: white;
-                font-size: 28px;
+                font-size: 36px;
                 font-weight: bold;
                 background: transparent;
             }
@@ -140,11 +141,12 @@ class MainWindow(QMainWindow):
         
         # العنوان الفرعي
         subtitle_label = QLabel("إدارة شاملة للزبائن والديون والأقساط واشتراكات الإنترنت")
+        subtitle_label.setObjectName("subtitle_label")
         subtitle_label.setAlignment(Qt.AlignCenter)
         subtitle_label.setStyleSheet("""
-            QLabel {
+            #subtitle_label {
                 color: #ecf0f1;
-                font-size: 14px;
+                font-size: 18px;
                 background: transparent;
                 margin-top: 10px;
             }
@@ -234,7 +236,7 @@ class MainWindow(QMainWindow):
                 color: white;
                 border: none;
                 border-radius: 10px;
-                font-size: 16px;
+                font-size: 22px;
                 font-weight: bold;
                 text-align: center;
                 padding: 20px;
@@ -293,9 +295,10 @@ class MainWindow(QMainWindow):
         status_layout = QVBoxLayout(status_frame)
         
         status_label = QLabel("معلومات النظام")
+        status_label.setObjectName("status_label")
         status_label.setStyleSheet("""
-            QLabel {
-                font-size: 16px;
+            #status_label {
+                font-size: 20px;
                 font-weight: bold;
                 color: #495057;
                 margin-bottom: 10px;
@@ -305,10 +308,11 @@ class MainWindow(QMainWindow):
         
         # يمكن إضافة إحصائيات سريعة هنا لاحقاً
         info_label = QLabel("مرحباً بك في نظام إدارة محل كاظم السعدي. اختر أحد الخيارات أعلاه للبدء.")
+        info_label.setObjectName("info_label")
         info_label.setStyleSheet("""
-            QLabel {
+            #info_label {
                 color: #6c757d;
-                font-size: 12px;
+                font-size: 16px;
             }
         """)
         status_layout.addWidget(info_label)
@@ -417,7 +421,7 @@ def main():
     app.setLayoutDirection(Qt.RightToLeft)  # دعم اللغة العربية
     
     # تعيين الخط
-    font = QFont("Arial", 10)
+    font = QFont("Arial", 12)
     app.setFont(font)
     
     window = MainWindow()
