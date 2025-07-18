@@ -167,7 +167,16 @@ class NumberHelper:
         Returns:
             المبلغ منسق
         """
-        return f"{amount:,.2f}"
+        if amount is None:
+            amount = 0.0
+        
+        # Check if the number has a fractional part
+        if amount == int(amount):
+            # No fractional part, format as integer
+            return f"{int(amount):,}"
+        else:
+            # Has a fractional part, format with 2 decimal places
+            return f"{amount:,.2f}"
     
     @staticmethod
     def format_percentage(percentage: float) -> str:
