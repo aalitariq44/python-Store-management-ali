@@ -18,6 +18,7 @@ class Person:
     name: str = ""
     phone: str = ""
     address: str = ""
+    notes: str = ""
     created_at: Optional[datetime] = None
     
     def __str__(self):

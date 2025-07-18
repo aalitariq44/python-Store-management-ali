@@ -15,7 +15,7 @@ class PersonValidator:
     """
     
     @staticmethod
-    def validate_person_data(name: str, phone: str, address: str) -> Tuple[bool, str]:
+    def validate_person_data(name: str, phone: str, address: str, notes: str) -> Tuple[bool, str]:
         """
         التحقق من صحة بيانات الزبون
         
@@ -23,6 +23,7 @@ class PersonValidator:
             name: اسم الزبون
             phone: رقم الهاتف
             address: العنوان
+            notes: ملاحظات
             
         Returns:
             tuple: (صحيح, رسالة الخطأ)
@@ -45,6 +46,10 @@ class PersonValidator:
         # التحقق من العنوان
         if address and len(address.strip()) > 200:
             return False, "العنوان طويل جداً"
+        
+        # التحقق من الملاحظات
+        if notes and len(notes.strip()) > 500:
+            return False, "الملاحظات طويلة جداً"
         
         return True, ""
     

@@ -223,6 +223,10 @@ class PersonDetailsView(QMainWindow):
         self.internet_tab = self.create_internet_tab()
         self.tab_widget.addTab(self.internet_tab, "اشتراكات الإنترنت")
         
+        # تبويب الملاحظات
+        self.notes_tab = self.create_notes_tab()
+        self.tab_widget.addTab(self.notes_tab, "الملاحظات")
+        
         layout.addWidget(self.tab_widget)
     
     def create_debts_tab(self) -> QWidget:
@@ -356,6 +360,24 @@ class PersonDetailsView(QMainWindow):
         self.installments_table.setColumnHidden(0, True)  # إخفاء عمود المعرف
         
         layout.addWidget(self.installments_table)
+        
+        return tab
+    
+    def create_notes_tab(self) -> QWidget:
+        """
+        إنشاء تبويب الملاحظات
+        
+        Returns:
+            QWidget: تبويب الملاحظات
+        """
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        
+        self.notes_text_edit = QTextEdit()
+        self.notes_text_edit.setReadOnly(True)
+        self.notes_text_edit.setPlainText(self.person.notes or "لا توجد ملاحظات.")
+        
+        layout.addWidget(self.notes_text_edit)
         
         return tab
     

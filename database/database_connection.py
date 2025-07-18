@@ -59,6 +59,7 @@ class DatabaseConnection:
                 name TEXT NOT NULL,
                 phone TEXT,
                 address TEXT,
+                notes TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
@@ -156,6 +157,19 @@ class DatabaseConnection:
                 print("Migration successful: 'updated_at' column added to 'internet_subscriptions'.")
         except sqlite3.Error as e:
             print(f"Migration check failed for 'internet_subscriptions': {e}")
+            conn.rollback()
+
+        # التحقق من وجود عمود 'notes' في جدول 'persons'
+        try:
+            cursor.execute("PRAGMA table_info(persons)")
+            columns = [row['name'] for row in cursor.fetchall()]
+            
+            if 'notes' not in columns:
+                cursor.execute("ALTER TABLE persons ADD COLUMN notes TEXT")
+                conn.commit()
+                print("Migration successful: 'notes' column added to 'persons'.")
+        except sqlite3.Error as e:
+            print(f"Migration check failed for 'persons': {e}")
             conn.rollback()
 
     def execute_query(self, query: str, params: tuple = None):

@@ -19,7 +19,7 @@ class PersonController:
         self.db = DatabaseConnection()
         self.queries = PersonQueries(self.db)
     
-    def add_person(self, name: str, phone: str, address: str) -> tuple[bool, str, Optional[int]]:
+    def add_person(self, name: str, phone: str, address: str, notes: str) -> tuple[bool, str, Optional[int]]:
         """
         إضافة زبون جديد
         
@@ -27,6 +27,7 @@ class PersonController:
             name: اسم الزبون
             phone: رقم الهاتف
             address: العنوان
+            notes: ملاحظات
             
         Returns:
             tuple: (نجح, رسالة, معرف الزبون الجديد)
@@ -34,7 +35,7 @@ class PersonController:
         # التحقق من صحة البيانات
         from utils.validators import PersonValidator
         validator = PersonValidator()
-        is_valid, error_message = validator.validate_person_data(name, phone, address)
+        is_valid, error_message = validator.validate_person_data(name, phone, address, notes)
         if not is_valid:
             return False, error_message, None
         
@@ -43,7 +44,7 @@ class PersonController:
             return False, "رقم الهاتف مُستخدم مسبقاً", None
         
         # إنشاء الزبون
-        person = Person(name=name.strip(), phone=phone.strip(), address=address.strip())
+        person = Person(name=name.strip(), phone=phone.strip(), address=address.strip(), notes=notes.strip())
         person_id = self.queries.create_person(person)
         
         if person_id:
@@ -51,7 +52,7 @@ class PersonController:
         else:
             return False, "حدث خطأ أثناء إضافة الزبون", None
     
-    def update_person(self, person_id: int, name: str, phone: str, address: str) -> tuple[bool, str]:
+    def update_person(self, person_id: int, name: str, phone: str, address: str, notes: str) -> tuple[bool, str]:
         """
         تحديث بيانات زبون
         
@@ -60,6 +61,7 @@ class PersonController:
             name: الاسم الجديد
             phone: رقم الهاتف الجديد
             address: العنوان الجديد
+            notes: الملاحظات الجديدة
             
         Returns:
             tuple: (نجح, رسالة)
@@ -72,7 +74,7 @@ class PersonController:
         # التحقق من صحة البيانات
         from utils.validators import PersonValidator
         validator = PersonValidator()
-        is_valid, error_message = validator.validate_person_data(name, phone, address)
+        is_valid, error_message = validator.validate_person_data(name, phone, address, notes)
         if not is_valid:
             return False, error_message
         
@@ -85,7 +87,8 @@ class PersonController:
             id=person_id,
             name=name.strip(),
             phone=phone.strip(),
-            address=address.strip()
+            address=address.strip(),
+            notes=notes.strip()
         )
         
         if self.queries.update_person(updated_person):

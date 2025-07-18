@@ -23,10 +23,10 @@ class PersonQueries:
         إضافة زبون جديد
         """
         query = """
-            INSERT INTO persons (name, phone, address)
-            VALUES (?, ?, ?)
+            INSERT INTO persons (name, phone, address, notes)
+            VALUES (?, ?, ?, ?)
         """
-        return self.db.execute_insert(query, (person.name, person.phone, person.address))
+        return self.db.execute_insert(query, (person.name, person.phone, person.address, person.notes))
     
     def get_all_persons(self) -> List[Person]:
         """
@@ -41,6 +41,7 @@ class PersonQueries:
                 name=row['name'],
                 phone=row['phone'],
                 address=row['address'],
+                notes=row['notes'],
                 created_at=datetime.fromisoformat(row['created_at']) if row['created_at'] else None
             ) for row in rows]
         return []
@@ -59,6 +60,7 @@ class PersonQueries:
                 name=row['name'],
                 phone=row['phone'],
                 address=row['address'],
+                notes=row['notes'],
                 created_at=datetime.fromisoformat(row['created_at']) if row['created_at'] else None
             )
         return None
@@ -69,10 +71,10 @@ class PersonQueries:
         """
         query = """
             UPDATE persons 
-            SET name = ?, phone = ?, address = ?
+            SET name = ?, phone = ?, address = ?, notes = ?
             WHERE id = ?
         """
-        result = self.db.execute_query(query, (person.name, person.phone, person.address, person.id))
+        result = self.db.execute_query(query, (person.name, person.phone, person.address, person.notes, person.id))
         return result is not None
     
     def delete_person(self, person_id: int) -> bool:
@@ -89,11 +91,11 @@ class PersonQueries:
         """
         query = """
             SELECT * FROM persons 
-            WHERE name LIKE ? OR phone LIKE ? OR address LIKE ?
+            WHERE name LIKE ? OR phone LIKE ? OR address LIKE ? OR notes LIKE ?
             ORDER BY name
         """
         search_pattern = f"%{search_term}%"
-        rows = self.db.execute_query(query, (search_pattern, search_pattern, search_pattern))
+        rows = self.db.execute_query(query, (search_pattern, search_pattern, search_pattern, search_pattern))
         
         if rows:
             return [Person(
@@ -101,6 +103,7 @@ class PersonQueries:
                 name=row['name'],
                 phone=row['phone'],
                 address=row['address'],
+                notes=row['notes'],
                 created_at=datetime.fromisoformat(row['created_at']) if row['created_at'] else None
             ) for row in rows]
         return []

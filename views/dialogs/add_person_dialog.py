@@ -100,6 +100,12 @@ class AddPersonDialog(QDialog):
         self.address_input.setMinimumHeight(120)
         form_layout.addRow("العنوان:", self.address_input)
         
+        # حقل الملاحظات
+        self.notes_input = QTextEdit()
+        self.notes_input.setPlaceholderText("أدخل أي ملاحظات إضافية")
+        self.notes_input.setMinimumHeight(100)
+        form_layout.addRow("ملاحظات:", self.notes_input)
+        
         # ملاحظة الحقول المطلوبة
         note_label = QLabel("* الحقول المطلوبة")
         note_label.setObjectName("error-label") # استخدام ObjectName
@@ -144,6 +150,7 @@ class AddPersonDialog(QDialog):
         # التنقل بين الحقول بـ Enter
         self.name_input.returnPressed.connect(self.phone_input.setFocus)
         self.phone_input.returnPressed.connect(self.address_input.setFocus)
+        # لا يمكن استخدام returnPressed مع QTextEdit، لذا التنقل سيكون يدويًا بالـ Tab
     
     def load_person_data(self):
         """
@@ -153,6 +160,8 @@ class AddPersonDialog(QDialog):
             self.name_input.setText(self.person.name)
             self.phone_input.setText(self.person.phone or "")
             self.address_input.setPlainText(self.person.address or "")
+            if hasattr(self.person, 'notes'):
+                self.notes_input.setPlainText(self.person.notes or "")
     
     def get_person_data(self) -> dict:
         """
@@ -164,7 +173,8 @@ class AddPersonDialog(QDialog):
         return {
             'name': self.name_input.text().strip(),
             'phone': self.phone_input.text().strip(),
-            'address': self.address_input.toPlainText().strip()
+            'address': self.address_input.toPlainText().strip(),
+            'notes': self.notes_input.toPlainText().strip()
         }
     
     def validate_data(self) -> tuple[bool, str]:
@@ -199,6 +209,10 @@ class AddPersonDialog(QDialog):
         # التحقق من العنوان
         if data['address'] and len(data['address']) > 200:
             return False, "العنوان طويل جداً (أكثر من 200 حرف)"
+            
+        # التحقق من الملاحظات
+        if data['notes'] and len(data['notes']) > 500:
+            return False, "الملاحظات طويلة جداً (أكثر من 500 حرف)"
         
         return True, ""
     
@@ -227,7 +241,7 @@ class AddPersonDialog(QDialog):
             self.reject()
         # Enter للحفظ (إذا لم يكن في حقل النص المتعدد الأسطر)
         elif event.key() in (Qt.Key_Return, Qt.Key_Enter):
-            if not self.address_input.hasFocus():
+            if not self.address_input.hasFocus() and not self.notes_input.hasFocus():
                 self.save_person()
         else:
             super().keyPressEvent(event)
