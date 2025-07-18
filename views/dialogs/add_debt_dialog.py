@@ -22,7 +22,9 @@ class AddDebtDialog(QDialog):
     def __init__(self, parent=None, debt: Debt = None, person_id: int = None):
         super().__init__(parent)
         self.debt = debt
-        self.person_id = person_id  # للإضافة الجديدة
+        self.person_id = person_id
+        if self.debt and self.debt.person_id:
+            self.person_id = self.debt.person_id
         self.person_controller = PersonController()
         self.init_ui()
         self.setup_connections()
@@ -172,24 +174,14 @@ class AddDebtDialog(QDialog):
                     self.due_date_input.setDate(qdate)
 
             self.is_paid_checkbox.setChecked(self.debt.is_paid)
-
-            # Set the person in the combo box and disable it
-            for i in range(self.person_combo.count()):
-                if self.person_combo.itemData(i) == self.debt.person_id:
-                    self.person_combo.setCurrentIndex(i)
-                    break
-            self.person_combo.setEnabled(False)
     
     def get_debt_data(self) -> dict:
         """
         الحصول على بيانات الدين من النموذج
         """
-        if self.debt:
-            person_id = self.debt.person_id
-        elif self.person_id:
+        person_id = self.person_combo.currentData()
+        if self.person_id:
             person_id = self.person_id
-        else:
-            person_id = self.person_combo.currentData()
 
         due_date = DateHelper.qdate_to_date(self.due_date_input.date())
 
@@ -208,7 +200,7 @@ class AddDebtDialog(QDialog):
         data = self.get_debt_data()
         
         # التحقق من اختيار الزبون
-        if not data['person_id']:
+        if not self.person_id and not data['person_id']:
             return False, "الرجاء اختيار زبون"
         
         if data['amount'] <= 0:

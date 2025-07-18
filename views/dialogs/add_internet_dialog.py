@@ -23,6 +23,8 @@ class AddInternetDialog(QDialog):
         super().__init__(parent)
         self.subscription = subscription
         self.person_id = person_id
+        if self.subscription and self.subscription.person_id:
+            self.person_id = self.subscription.person_id
         self.person_controller = PersonController()
         self.init_ui()
         self.setup_connections()

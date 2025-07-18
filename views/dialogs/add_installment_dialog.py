@@ -23,6 +23,8 @@ class AddInstallmentDialog(QDialog):
         super().__init__(parent)
         self.installment = installment
         self.person_id = person_id
+        if self.installment and self.installment.person_id:
+            self.person_id = self.installment.person_id
         self.person_controller = PersonController()
         self.init_ui()
         self.setup_connections()
