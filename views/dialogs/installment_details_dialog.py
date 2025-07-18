@@ -61,10 +61,6 @@ class InstallmentDetailsDialog(QDialog):
         details_layout.addWidget(self.create_info_label("الزبون:", self.installment.person_name))
         details_layout.addWidget(self.create_info_label("الوصف:", self.installment.description))
         
-        frequency_map = {"monthly": "شهري", "weekly": "أسبوعي", "yearly": "سنوي"}
-        frequency_text = frequency_map.get(self.installment.frequency, self.installment.frequency)
-        details_layout.addWidget(self.create_info_label("الدورية:", frequency_text))
-        
         start_date = DateHelper.format_date(self.installment.start_date) if self.installment.start_date else "غير محدد"
         details_layout.addWidget(self.create_info_label("تاريخ البداية:", start_date))
         

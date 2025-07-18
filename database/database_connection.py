@@ -84,13 +84,8 @@ class DatabaseConnection:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 person_id INTEGER NOT NULL,
                 total_amount REAL NOT NULL,
-                paid_amount REAL DEFAULT 0,
-                installment_amount REAL NOT NULL,
-                frequency TEXT DEFAULT 'monthly',
                 description TEXT,
                 start_date DATE,
-                end_date DATE,
-                is_completed BOOLEAN DEFAULT FALSE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (person_id) REFERENCES persons (id) ON DELETE CASCADE
             )
@@ -146,6 +141,48 @@ class DatabaseConnection:
         """
         cursor = conn.cursor()
         
+        # --- ترحيل جدول الأقساط ---
+        try:
+            cursor.execute("PRAGMA table_info(installments)")
+            columns = [row['name'] for row in cursor.fetchall()]
+            
+            # التحقق من وجود الأعمدة القديمة لتحديد ما إذا كان الترحيل مطلوبًا
+            if 'paid_amount' in columns or 'installment_amount' in columns or 'frequency' in columns:
+                print("Starting migration for 'installments' table...")
+                
+                # 1. إعادة تسمية الجدول الحالي
+                cursor.execute("ALTER TABLE installments RENAME TO installments_old")
+                
+                # 2. إنشاء الجدول الجديد بالمخطط المحدث
+                cursor.execute("""
+                    CREATE TABLE installments (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        person_id INTEGER NOT NULL,
+                        total_amount REAL NOT NULL,
+                        description TEXT,
+                        start_date DATE,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (person_id) REFERENCES persons (id) ON DELETE CASCADE
+                    )
+                """)
+                
+                # 3. نسخ البيانات من الجدول القديم إلى الجديد
+                cursor.execute("""
+                    INSERT INTO installments (id, person_id, total_amount, description, start_date, created_at)
+                    SELECT id, person_id, total_amount, description, start_date, created_at
+                    FROM installments_old
+                """)
+                
+                # 4. حذف الجدول القديم
+                cursor.execute("DROP TABLE installments_old")
+                
+                conn.commit()
+                print("Migration successful: 'installments' table has been updated.")
+        except sqlite3.Error as e:
+            print(f"Migration failed for 'installments' table: {e}")
+            conn.rollback()
+
+        # --- ترحيلات أخرى ---
         # التحقق من وجود عمود 'updated_at' في جدول 'internet_subscriptions'
         try:
             cursor.execute("PRAGMA table_info(internet_subscriptions)")

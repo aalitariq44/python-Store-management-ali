@@ -119,11 +119,6 @@ class InstallmentsView(QMainWindow):
         self.status_filter.addItems(["الكل", "نشط", "مكتمل"])
         self.status_filter.setMaximumWidth(120)
         
-        # فلتر الدورية
-        frequency_label = QLabel("الدورية:")
-        self.frequency_filter = QComboBox()
-        self.frequency_filter.addItems(["الكل", "شهري", "أسبوعي", "سنوي"])
-        self.frequency_filter.setMaximumWidth(120)
         
         # الأزرار
         self.add_btn = QPushButton("إضافة قسط")
@@ -170,8 +165,6 @@ class InstallmentsView(QMainWindow):
         toolbar_layout.addWidget(self.search_input)
         toolbar_layout.addWidget(status_label)
         toolbar_layout.addWidget(self.status_filter)
-        toolbar_layout.addWidget(frequency_label)
-        toolbar_layout.addWidget(self.frequency_filter)
         toolbar_layout.addStretch()
         toolbar_layout.addWidget(self.add_btn)
         toolbar_layout.addWidget(self.edit_btn)
@@ -205,7 +198,7 @@ class InstallmentsView(QMainWindow):
         # الجدول
         self.table = QTableWidget()
         headers = ["المعرف", "اسم الزبون", "المبلغ الإجمالي", "المبلغ المدفوع", "المبلغ المتبقي",
-                   "الدورية", "الوصف", "نسبة الإنجاز", "الحالة", "تاريخ البداية"]
+                   "الوصف", "نسبة الإنجاز", "الحالة", "تاريخ البداية"]
         TableHelper.setup_table_headers(self.table, headers)
         
         # تنسيق الجدول
@@ -292,7 +285,6 @@ class InstallmentsView(QMainWindow):
         # أحداث البحث والفلترة
         self.search_input.textChanged.connect(self.filter_installments)
         self.status_filter.currentTextChanged.connect(self.filter_installments)
-        self.frequency_filter.currentTextChanged.connect(self.filter_installments)
     
     def load_installments(self):
         """
@@ -336,13 +328,8 @@ class InstallmentsView(QMainWindow):
             remaining_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
             self.table.setItem(row, 4, remaining_item)
             
-            # الدورية
-            frequency_map = {"monthly": "شهري", "weekly": "أسبوعي", "yearly": "سنوي"}
-            frequency_text = frequency_map.get(installment.frequency, installment.frequency)
-            self.table.setItem(row, 5, QTableWidgetItem(frequency_text))
-            
             # الوصف
-            self.table.setItem(row, 6, QTableWidgetItem(installment.description))
+            self.table.setItem(row, 5, QTableWidgetItem(installment.description))
             
             # نسبة الإنجاز
             percentage = NumberHelper.format_percentage(installment.completion_percentage)
@@ -360,7 +347,7 @@ class InstallmentsView(QMainWindow):
                 progress_item.setBackground(Qt.red)
                 progress_item.setForeground(Qt.black)
             
-            self.table.setItem(row, 7, progress_item)
+            self.table.setItem(row, 6, progress_item)
             
             # الحالة
             status = "مكتمل" if installment.is_completed else "نشط"
@@ -373,27 +360,26 @@ class InstallmentsView(QMainWindow):
                 status_item.setBackground(Qt.blue)
                 status_item.setForeground(Qt.black)
             
-            self.table.setItem(row, 8, status_item)
+            self.table.setItem(row, 7, status_item)
             
             # تاريخ البداية
             start_date = DateHelper.format_date(installment.start_date) if installment.start_date else "غير محدد"
-            self.table.setItem(row, 9, QTableWidgetItem(start_date))
+            self.table.setItem(row, 8, QTableWidgetItem(start_date))
         
         # ضبط عرض الأعمدة
         header = self.table.horizontalHeader()
         header.setSectionResizeMode(1, QHeaderView.Stretch)  # اسم الزبون
-        header.setSectionResizeMode(6, QHeaderView.Stretch)  # الوصف
+        header.setSectionResizeMode(5, QHeaderView.Stretch)  # الوصف
     
     def filter_installments(self):
         """
-        فلترة الأقساط حسب البحث والحالة والدورية
+        فلترة الأقساط حسب البحث والحالة
         """
         if not hasattr(self, 'all_installments'):
             return
         
         search_term = self.search_input.text().strip().lower()
         status_filter = self.status_filter.currentText()
-        frequency_filter = self.frequency_filter.currentText()
         
         filtered_installments = []
         
@@ -410,13 +396,6 @@ class InstallmentsView(QMainWindow):
                 continue
             elif status_filter == "مكتمل" and not installment.is_completed:
                 continue
-            
-            # فلترة الدورية
-            frequency_map = {"شهري": "monthly", "أسبوعي": "weekly", "سنوي": "yearly"}
-            if frequency_filter != "الكل":
-                expected_frequency = frequency_map.get(frequency_filter)
-                if expected_frequency and installment.frequency != expected_frequency:
-                    continue
             
             filtered_installments.append(installment)
         
@@ -487,7 +466,6 @@ class InstallmentsView(QMainWindow):
             success, message, installment_id = self.installment_controller.add_installment(
                 person_id,
                 installment_data['total_amount'],
-                installment_data['frequency'],
                 installment_data['description'],
                 installment_data['start_date']
             )
@@ -512,7 +490,6 @@ class InstallmentsView(QMainWindow):
             success, message = self.installment_controller.update_installment(
                 self.selected_installment.id,
                 installment_data['total_amount'],
-                installment_data['frequency'],
                 installment_data['description'],
                 installment_data['start_date']
             )

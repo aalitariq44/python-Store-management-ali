@@ -219,24 +219,23 @@ class InstallmentQueries:
         إضافة قسط جديد
         """
         query = """
-            INSERT INTO installments (person_id, total_amount, paid_amount, installment_amount, 
-                                    frequency, description, start_date, end_date, is_completed)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO installments (person_id, total_amount, description, start_date)
+            VALUES (?, ?, ?, ?)
         """
         return self.db.execute_insert(query, (
-            installment.person_id, installment.total_amount, installment.paid_amount,
-            installment.installment_amount, installment.frequency, installment.description,
-            installment.start_date.isoformat() if installment.start_date else None,
-            installment.end_date.isoformat() if installment.end_date else None,
-            installment.is_completed
+            installment.person_id, installment.total_amount, installment.description,
+            installment.start_date.isoformat() if installment.start_date else None
         ))
     
     def get_all_installments(self) -> List[Installment]:
         """
-        الحصول على جميع الأقساط مع أسماء الزبائن
+        الحصول على جميع الأقساط مع أسماء الزبائن والمبلغ المدفوع
         """
         query = """
-            SELECT i.*, p.name as person_name
+            SELECT 
+                i.id, i.person_id, i.total_amount, i.description, i.start_date, i.created_at,
+                p.name as person_name,
+                (SELECT SUM(amount) FROM payments WHERE installment_id = i.id) as paid_amount
             FROM installments i
             JOIN persons p ON i.person_id = p.id
             ORDER BY i.created_at DESC
@@ -244,28 +243,31 @@ class InstallmentQueries:
         rows = self.db.execute_query(query)
         
         if rows:
-            return [Installment(
-                id=row['id'],
-                person_id=row['person_id'],
-                total_amount=row['total_amount'],
-                paid_amount=row['paid_amount'],
-                installment_amount=row['installment_amount'],
-                frequency=row['frequency'],
-                description=row['description'],
-                start_date=date.fromisoformat(row['start_date']) if row['start_date'] else None,
-                end_date=date.fromisoformat(row['end_date']) if row['end_date'] else None,
-                is_completed=bool(row['is_completed']),
-                created_at=datetime.fromisoformat(row['created_at']) if row['created_at'] else None,
-                person_name=row['person_name']
-            ) for row in rows]
+            installments = []
+            for row in rows:
+                inst = Installment(
+                    id=row['id'],
+                    person_id=row['person_id'],
+                    total_amount=row['total_amount'],
+                    description=row['description'],
+                    start_date=date.fromisoformat(row['start_date']) if row['start_date'] else None,
+                    created_at=datetime.fromisoformat(row['created_at']) if row['created_at'] else None,
+                    person_name=row['person_name']
+                )
+                inst.paid_amount = row['paid_amount'] or 0.0
+                installments.append(inst)
+            return installments
         return []
     
     def get_installments_by_person(self, person_id: int) -> List[Installment]:
         """
-        الحصول على أقساط زبون معين
+        الحصول على أقساط زبون معين مع المبلغ المدفوع
         """
         query = """
-            SELECT i.*, p.name as person_name
+            SELECT 
+                i.id, i.person_id, i.total_amount, i.description, i.start_date, i.created_at,
+                p.name as person_name,
+                (SELECT SUM(amount) FROM payments WHERE installment_id = i.id) as paid_amount
             FROM installments i
             JOIN persons p ON i.person_id = p.id
             WHERE i.person_id = ?
@@ -274,28 +276,31 @@ class InstallmentQueries:
         rows = self.db.execute_query(query, (person_id,))
         
         if rows:
-            return [Installment(
-                id=row['id'],
-                person_id=row['person_id'],
-                total_amount=row['total_amount'],
-                paid_amount=row['paid_amount'],
-                installment_amount=row['installment_amount'],
-                frequency=row['frequency'],
-                description=row['description'],
-                start_date=date.fromisoformat(row['start_date']) if row['start_date'] else None,
-                end_date=date.fromisoformat(row['end_date']) if row['end_date'] else None,
-                is_completed=bool(row['is_completed']),
-                created_at=datetime.fromisoformat(row['created_at']) if row['created_at'] else None,
-                person_name=row['person_name']
-            ) for row in rows]
+            installments = []
+            for row in rows:
+                inst = Installment(
+                    id=row['id'],
+                    person_id=row['person_id'],
+                    total_amount=row['total_amount'],
+                    description=row['description'],
+                    start_date=date.fromisoformat(row['start_date']) if row['start_date'] else None,
+                    created_at=datetime.fromisoformat(row['created_at']) if row['created_at'] else None,
+                    person_name=row['person_name']
+                )
+                inst.paid_amount = row['paid_amount'] or 0.0
+                installments.append(inst)
+            return installments
         return []
 
     def get_installment_by_id(self, installment_id: int) -> Optional[Installment]:
         """
-        الحصول على قسط بالمعرف
+        الحصول على قسط بالمعرف مع المبلغ المدفوع
         """
         query = """
-            SELECT i.*, p.name as person_name
+            SELECT 
+                i.id, i.person_id, i.total_amount, i.description, i.start_date, i.created_at,
+                p.name as person_name,
+                (SELECT SUM(amount) FROM payments WHERE installment_id = i.id) as paid_amount
             FROM installments i
             JOIN persons p ON i.person_id = p.id
             WHERE i.id = ?
@@ -304,20 +309,17 @@ class InstallmentQueries:
         
         if rows:
             row = rows[0]
-            return Installment(
+            inst = Installment(
                 id=row['id'],
                 person_id=row['person_id'],
                 total_amount=row['total_amount'],
-                paid_amount=row['paid_amount'],
-                installment_amount=row['installment_amount'],
-                frequency=row['frequency'],
                 description=row['description'],
                 start_date=date.fromisoformat(row['start_date']) if row['start_date'] else None,
-                end_date=date.fromisoformat(row['end_date']) if row['end_date'] else None,
-                is_completed=bool(row['is_completed']),
                 created_at=datetime.fromisoformat(row['created_at']) if row['created_at'] else None,
                 person_name=row['person_name']
             )
+            inst.paid_amount = row['paid_amount'] or 0.0
+            return inst
         return None
     
     def update_installment(self, installment: Installment) -> bool:
@@ -326,33 +328,15 @@ class InstallmentQueries:
         """
         query = """
             UPDATE installments 
-            SET total_amount = ?, paid_amount = ?, installment_amount = ?, 
-                frequency = ?, description = ?, start_date = ?, end_date = ?, is_completed = ?
+            SET total_amount = ?, description = ?, start_date = ?
             WHERE id = ?
         """
         result = self.db.execute_query(query, (
-            installment.total_amount, installment.paid_amount, installment.installment_amount,
-            installment.frequency, installment.description,
+            installment.total_amount, installment.description,
             installment.start_date.isoformat() if installment.start_date else None,
-            installment.end_date.isoformat() if installment.end_date else None,
-            installment.is_completed, installment.id
+            installment.id
         ))
         return result is not None
-
-    def update_installment_amounts(self, installment_id: int):
-        """
-        تحديث المبالغ المدفوعة والمتبقية للقسط
-        """
-        # حساب مجموع الدفعات
-        payments_sum = self.db.execute_query("SELECT SUM(amount) as total FROM payments WHERE installment_id = ?", (installment_id,))[0]['total'] or 0
-        
-        # الحصول على المبلغ الإجمالي للقسط
-        installment_total = self.db.execute_query("SELECT total_amount FROM installments WHERE id = ?", (installment_id,))[0]['total_amount']
-        
-        # تحديث القسط
-        is_completed = payments_sum >= installment_total
-        query = "UPDATE installments SET paid_amount = ?, is_completed = ? WHERE id = ?"
-        self.db.execute_query(query, (payments_sum, is_completed, installment_id))
     
     def delete_installment(self, installment_id: int) -> bool:
         """
@@ -495,13 +479,10 @@ class PaymentQueries:
             INSERT INTO payments (installment_id, amount, payment_date)
             VALUES (?, ?, ?)
         """
-        payment_id = self.db.execute_insert(query, (
+        return self.db.execute_insert(query, (
             payment.installment_id, payment.amount,
             payment.payment_date.isoformat() if payment.payment_date else None
         ))
-        if payment_id:
-            InstallmentQueries(self.db).update_installment_amounts(payment.installment_id)
-        return payment_id
 
     def get_payments_by_installment(self, installment_id: int) -> List[Payment]:
         """
@@ -545,13 +526,7 @@ class PaymentQueries:
         """
         حذف دفعة
         """
-        payment = self.get_payment_by_id(payment_id)
-        if not payment:
-            return False
-
+        # لا نحتاج لتحديث القسط بعد الآن، فالمبلغ المدفوع يحسب ديناميكياً
         query = "DELETE FROM payments WHERE id = ?"
         result = self.db.execute_query(query, (payment_id,))
-        if result is not None:
-            InstallmentQueries(self.db).update_installment_amounts(payment.installment_id)
-            return True
-        return False
+        return result is not None

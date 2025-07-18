@@ -99,13 +99,6 @@ class AddInstallmentDialog(QDialog):
         
         
         
-        # دورية القسط
-        self.frequency_combo = QComboBox()
-        self.frequency_combo.addItems(["monthly", "weekly", "yearly"])
-        self.frequency_combo.setItemText(0, "شهري")
-        self.frequency_combo.setItemText(1, "أسبوعي")
-        self.frequency_combo.setItemText(2, "سنوي")
-        form_layout.addRow("دورية القسط: *", self.frequency_combo)
         
         # وصف القسط
         self.description_input = QTextEdit()
@@ -174,12 +167,6 @@ class AddInstallmentDialog(QDialog):
         """
         if self.installment:
             self.total_amount_input.setValue(self.installment.total_amount)
-            
-            # تعيين الدورية
-            frequency_map = {"monthly": 0, "weekly": 1, "yearly": 2}
-            index = frequency_map.get(self.installment.frequency, 0)
-            self.frequency_combo.setCurrentIndex(index)
-            
             self.description_input.setPlainText(self.installment.description)
             
             if self.installment.start_date:
@@ -192,22 +179,17 @@ class AddInstallmentDialog(QDialog):
         """
         الحصول على بيانات القسط من النموذج
         """
-        frequency_map = {0: "monthly", 1: "weekly", 2: "yearly"}
-        frequency = frequency_map[self.frequency_combo.currentIndex()]
-        
         start_date = DateHelper.qdate_to_date(self.start_date_input.date())
         selected_person_id = self.person_combo.currentData()
         
+        # Use self.person_id if it's available (especially in edit mode)
+        person_id_to_use = selected_person_id if selected_person_id is not None else self.person_id
+
         return {
-            'person_id': selected_person_id,
+            'person_id': person_id_to_use,
             'total_amount': self.total_amount_input.value(),
-            'paid_amount': 0,  # Set to 0 as it's removed
-            'installment_amount': 0, # Set to 0 as it's removed
-            'frequency': frequency,
             'description': self.description_input.toPlainText().strip(),
             'start_date': start_date,
-            'end_date': None, # Set to None as it's removed
-            'is_completed': False # Set to False as it's removed
         }
     
     def validate_data(self) -> tuple[bool, str]:

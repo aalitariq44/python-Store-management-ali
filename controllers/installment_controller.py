@@ -22,14 +22,13 @@ class InstallmentController:
         self.payment_queries = PaymentQueries(self.db)
     
     def add_installment(self, person_id: int, total_amount: float,
-                       frequency: str, description: str, start_date: Optional[date] = None) -> tuple[bool, str, Optional[int]]:
+                       description: str, start_date: Optional[date] = None) -> tuple[bool, str, Optional[int]]:
         """
         إضافة قسط جديد
         
         Args:
             person_id: معرف الزبون
             total_amount: المبلغ الإجمالي
-            frequency: دورية القسط (monthly, weekly, yearly)
             description: وصف القسط
             start_date: تاريخ البداية
             
@@ -37,26 +36,19 @@ class InstallmentController:
             tuple: (نجح, رسالة, معرف القسط الجديد)
         """
         # التحقق من صحة البيانات
-        from utils.validators import InstallmentValidator
-        validator = InstallmentValidator()
-        is_valid, error_message = validator.validate_installment_data(
-            person_id, total_amount, 0, frequency, description,
-            start_date, None
-        )
-        if not is_valid:
-            return False, error_message, None
-        
+        if not person_id:
+            return False, "الرجاء تحديد زبون.", None
+        if total_amount <= 0:
+            return False, "المبلغ الإجمالي يجب أن يكون أكبر من صفر.", None
+        if not description.strip():
+            return False, "وصف القسط مطلوب.", None
+
         # إنشاء القسط
         installment = Installment(
             person_id=person_id,
             total_amount=total_amount,
-            paid_amount=0.0,
-            installment_amount=0,
-            frequency=frequency,
             description=description.strip(),
-            start_date=start_date,
-            end_date=None,
-            is_completed=False
+            start_date=start_date
         )
         
         installment_id = self.queries.create_installment(installment)
@@ -67,18 +59,15 @@ class InstallmentController:
             return False, "حدث خطأ أثناء إضافة القسط", None
     
     def update_installment(self, installment_id: int, total_amount: float,
-                          frequency: str, description: str,
-                          start_date: Optional[date], paid_amount: float = -1) -> tuple[bool, str]:
+                          description: str, start_date: Optional[date]) -> tuple[bool, str]:
         """
         تحديث قسط
         
         Args:
             installment_id: معرف القسط
             total_amount: المبلغ الإجمالي الجديد
-            frequency: دورية القسط الجديدة
             description: الوصف الجديد
             start_date: تاريخ البداية الجديد
-            paid_amount: المبلغ المدفوع الجديد (اختياري)
             
         Returns:
             tuple: (نجح, رسالة)
@@ -89,37 +78,22 @@ class InstallmentController:
             return False, "القسط غير موجود"
         
         # التحقق من صحة البيانات
-        from utils.validators import InstallmentValidator
-        validator = InstallmentValidator()
-        is_valid, error_message = validator.validate_installment_data(
-            existing_installment.person_id, total_amount, 0,
-            frequency, description, start_date, None
-        )
-        if not is_valid:
-            return False, error_message
+        if total_amount <= 0:
+            return False, "المبلغ الإجمالي يجب أن يكون أكبر من صفر."
+        if not description.strip():
+            return False, "وصف القسط مطلوب."
         
-        # استخدام المبلغ المدفوع الحالي إذا لم يتم توفيره
-        current_paid_amount = paid_amount if paid_amount != -1 else existing_installment.paid_amount
-        
-        # التحقق من أن المبلغ المدفوع لا يتجاوز المبلغ الإجمالي
-        if current_paid_amount > total_amount:
-            return False, "المبلغ المدفوع لا يمكن أن يتجاوز المبلغ الإجمالي"
-        
-        # تحديد حالة الإكمال
-        is_completed = current_paid_amount >= total_amount
-        
+        # التحقق من أن المبلغ المدفوع لا يتجاوز المبلغ الإجمالي الجديد
+        if existing_installment.paid_amount > total_amount:
+            return False, "المبلغ الإجمالي الجديد لا يمكن أن يكون أقل من المبلغ المدفوع حالياً."
+
         # تحديث البيانات
         updated_installment = Installment(
             id=installment_id,
             person_id=existing_installment.person_id,
             total_amount=total_amount,
-            paid_amount=current_paid_amount,
-            installment_amount=0,
-            frequency=frequency,
             description=description.strip(),
-            start_date=start_date,
-            end_date=None,
-            is_completed=is_completed
+            start_date=start_date
         )
         
         if self.queries.update_installment(updated_installment):
@@ -146,10 +120,9 @@ class InstallmentController:
         if payment_amount <= 0:
             return False, "مبلغ الدفعة يجب أن يكون أكبر من صفر"
         
-        new_paid_amount = existing_installment.paid_amount + payment_amount
-        
-        if new_paid_amount > existing_installment.total_amount:
-            return False, "مبلغ الدفعة يتجاوز المبلغ المتبقي"
+        # التحقق من أن الدفعة الجديدة لا تجعل المبلغ المدفوع يتجاوز الإجمالي
+        if (existing_installment.paid_amount + payment_amount) > existing_installment.total_amount:
+            return False, f"مبلغ الدفعة كبير جداً. المبلغ المتبقي هو {existing_installment.remaining_amount}"
             
         # إضافة الدفعة إلى جدول الدفعات
         payment = Payment(
@@ -159,16 +132,10 @@ class InstallmentController:
         )
         payment_id = self.payment_queries.create_payment(payment)
         
-        if not payment_id:
+        if payment_id:
+            return True, "تمت إضافة الدفعة بنجاح"
+        else:
             return False, "فشل تسجيل الدفعة"
-
-        # تحديث القسط
-        return self.update_installment(
-            installment_id, existing_installment.total_amount,
-            existing_installment.frequency,
-            existing_installment.description, existing_installment.start_date,
-            paid_amount=new_paid_amount
-        )
     
     def delete_installment(self, installment_id: int) -> tuple[bool, str]:
         """
@@ -221,11 +188,7 @@ class InstallmentController:
         Returns:
             القسط أو None
         """
-        all_installments = self.get_all_installments()
-        for installment in all_installments:
-            if installment.id == installment_id:
-                return installment
-        return None
+        return self.queries.get_installment_by_id(installment_id)
     
     def get_active_installments(self) -> List[Installment]:
         """

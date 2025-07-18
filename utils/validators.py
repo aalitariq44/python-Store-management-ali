@@ -119,24 +119,17 @@ class InstallmentValidator:
     التحقق من صحة بيانات الأقساط
     """
     
-    VALID_FREQUENCIES = ['monthly', 'weekly', 'yearly']
-    
     @staticmethod
     def validate_installment_data(person_id: int, total_amount: float, 
-                                 installment_amount: float, frequency: str,
-                                 description: str, start_date: Optional[date],
-                                 end_date: Optional[date]) -> Tuple[bool, str]:
+                                 description: str, start_date: Optional[date]) -> Tuple[bool, str]:
         """
         التحقق من صحة بيانات القسط
         
         Args:
             person_id: معرف الزبون
             total_amount: المبلغ الإجمالي
-            installment_amount: مبلغ القسط
-            frequency: دورية القسط
             description: وصف القسط
             start_date: تاريخ البداية
-            end_date: تاريخ النهاية
             
         Returns:
             tuple: (صحيح, رسالة الخطأ)
@@ -152,24 +145,12 @@ class InstallmentValidator:
         if total_amount > 999999999:
             return False, "المبلغ الإجمالي كبير جداً"
         
-        # التحقق من مبلغ القسط
-        if installment_amount > total_amount:
-            return False, "مبلغ القسط لا يمكن أن يكون أكبر من المبلغ الإجمالي"
-        
-        # التحقق من الدورية
-        if frequency not in InstallmentValidator.VALID_FREQUENCIES:
-            return False, f"دورية القسط يجب أن تكون إحدى القيم التالية: {', '.join(InstallmentValidator.VALID_FREQUENCIES)}"
-        
         # التحقق من الوصف
         if not description or not description.strip():
             return False, "وصف القسط مطلوب"
         
         if len(description.strip()) > 200:
             return False, "وصف القسط طويل جداً"
-        
-        # التحقق من التواريخ
-        if start_date and end_date and start_date >= end_date:
-            return False, "تاريخ البداية يجب أن يكون قبل تاريخ النهاية"
         
         return True, ""
 
