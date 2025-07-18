@@ -342,13 +342,13 @@ class InstallmentsView(QMainWindow):
             # تلوين نسبة الإنجاز
             if installment.completion_percentage >= 100:
                 progress_item.setBackground(Qt.green)
-                progress_item.setForeground(Qt.white)
+                progress_item.setForeground(Qt.black)
             elif installment.completion_percentage >= 50:
                 progress_item.setBackground(Qt.yellow)
                 progress_item.setForeground(Qt.black)
             else:
                 progress_item.setBackground(Qt.red)
-                progress_item.setForeground(Qt.white)
+                progress_item.setForeground(Qt.black)
             
             self.table.setItem(row, 5, progress_item)
             
@@ -358,10 +358,10 @@ class InstallmentsView(QMainWindow):
             
             if installment.is_completed:
                 status_item.setBackground(Qt.green)
-                status_item.setForeground(Qt.white)
+                status_item.setForeground(Qt.black)
             else:
                 status_item.setBackground(Qt.blue)
-                status_item.setForeground(Qt.white)
+                status_item.setForeground(Qt.black)
             
             self.table.setItem(row, 6, status_item)
             
