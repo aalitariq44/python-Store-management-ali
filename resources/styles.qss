@@ -256,5 +256,3 @@ QStatusBar {
 QPushButton, QLineEdit, QTextEdit, QComboBox {
     transition: all 0.3s ease;
 }
-
-/* الظلال (تمت الإزالة لأنها غير مدعومة) */

@@ -108,6 +108,12 @@ class AddInternetDialog(QDialog):
         self.start_date_input.setDisplayFormat("yyyy-MM-dd")
         form_layout.addRow("تاريخ البداية:", self.start_date_input)
         
+        # حالة الدفع
+        self.payment_status_combo = QComboBox()
+        self.payment_status_combo.addItem("غير مدفوع", "unpaid")
+        self.payment_status_combo.addItem("مدفوع", "paid")
+        form_layout.addRow("حالة الدفع:", self.payment_status_combo)
+        
         # ملاحظة الحقول المطلوبة
         note_label = QLabel("* الحقول المطلوبة")
         note_label.setObjectName("error-label")
@@ -166,6 +172,11 @@ class AddInternetDialog(QDialog):
                 qdate = DateHelper.date_to_qdate(self.subscription.start_date)
                 if qdate:
                     self.start_date_input.setDate(qdate)
+            
+            if self.subscription.payment_status:
+                index = self.payment_status_combo.findData(self.subscription.payment_status)
+                if index != -1:
+                    self.payment_status_combo.setCurrentIndex(index)
     
     def get_subscription_data(self) -> dict:
         """
@@ -189,7 +200,8 @@ class AddInternetDialog(QDialog):
             'speed': None,  # تم حذف حقل السرعة
             'start_date': start_date,
             'end_date': end_date,
-            'is_active': is_active
+            'is_active': is_active,
+            'payment_status': self.payment_status_combo.currentData()
         }
     
     def validate_data(self) -> tuple[bool, str]:

@@ -377,14 +377,14 @@ class InternetSubscriptionQueries:
         """
         query = """
             INSERT INTO internet_subscriptions (person_id, plan_name, monthly_fee, 
-                                               start_date, end_date, is_active)
-            VALUES (?, ?, ?, ?, ?, ?)
+                                               start_date, end_date, is_active, payment_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         """
         return self.db.execute_insert(query, (
             subscription.person_id, subscription.plan_name, subscription.monthly_fee,
             subscription.start_date.isoformat() if subscription.start_date else None,
             subscription.end_date.isoformat() if subscription.end_date else None,
-            subscription.is_active
+            subscription.is_active, subscription.payment_status
         ))
     
     def get_all_subscriptions(self) -> List[InternetSubscription]:
@@ -392,7 +392,7 @@ class InternetSubscriptionQueries:
         الحصول على جميع الاشتراكات مع أسماء الزبائن
         """
         query = """
-            SELECT s.id, s.person_id, s.plan_name, s.monthly_fee, s.start_date, s.end_date, s.is_active, s.created_at, s.updated_at, p.name as person_name
+            SELECT s.id, s.person_id, s.plan_name, s.monthly_fee, s.start_date, s.end_date, s.is_active, s.payment_status, s.created_at, s.updated_at, p.name as person_name
             FROM internet_subscriptions s
             JOIN persons p ON s.person_id = p.id
             ORDER BY s.created_at DESC
@@ -408,6 +408,7 @@ class InternetSubscriptionQueries:
                 start_date=date.fromisoformat(row['start_date']) if row['start_date'] else None,
                 end_date=date.fromisoformat(row['end_date']) if row['end_date'] else None,
                 is_active=bool(row['is_active']),
+                payment_status=row['payment_status'],
                 created_at=datetime.fromisoformat(row['created_at']) if row['created_at'] else None,
                 updated_at=datetime.fromisoformat(row['updated_at']) if row['updated_at'] else None,
                 person_name=row['person_name']
@@ -419,7 +420,7 @@ class InternetSubscriptionQueries:
         الحصول على اشتراكات زبون معين
         """
         query = """
-            SELECT s.id, s.person_id, s.plan_name, s.monthly_fee, s.start_date, s.end_date, s.is_active, s.created_at, s.updated_at, p.name as person_name
+            SELECT s.id, s.person_id, s.plan_name, s.monthly_fee, s.start_date, s.end_date, s.is_active, s.payment_status, s.created_at, s.updated_at, p.name as person_name
             FROM internet_subscriptions s
             JOIN persons p ON s.person_id = p.id
             WHERE s.person_id = ?
@@ -436,6 +437,7 @@ class InternetSubscriptionQueries:
                 start_date=date.fromisoformat(row['start_date']) if row['start_date'] else None,
                 end_date=date.fromisoformat(row['end_date']) if row['end_date'] else None,
                 is_active=bool(row['is_active']),
+                payment_status=row['payment_status'],
                 created_at=datetime.fromisoformat(row['created_at']) if row['created_at'] else None,
                 updated_at=datetime.fromisoformat(row['updated_at']) if row['updated_at'] else None,
                 person_name=row['person_name']
@@ -449,15 +451,23 @@ class InternetSubscriptionQueries:
         query = """
             UPDATE internet_subscriptions 
             SET plan_name = ?, monthly_fee = ?, 
-                start_date = ?, end_date = ?, is_active = ?
+                start_date = ?, end_date = ?, is_active = ?, payment_status = ?
             WHERE id = ?
         """
         result = self.db.execute_query(query, (
             subscription.plan_name, subscription.monthly_fee,
             subscription.start_date.isoformat() if subscription.start_date else None,
             subscription.end_date.isoformat() if subscription.end_date else None,
-            subscription.is_active, subscription.id
+            subscription.is_active, subscription.payment_status, subscription.id
         ))
+        return result is not None
+    
+    def update_subscription_payment_status(self, subscription_id: int, payment_status: str) -> bool:
+        """
+        تحديث حالة الدفع لاشتراك
+        """
+        query = "UPDATE internet_subscriptions SET payment_status = ? WHERE id = ?"
+        result = self.db.execute_query(query, (payment_status, subscription_id))
         return result is not None
     
     def delete_subscription(self, subscription_id: int) -> bool:

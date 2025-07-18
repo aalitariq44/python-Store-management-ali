@@ -131,9 +131,10 @@ class InternetView(QMainWindow):
         self.edit_btn = QPushButton("تعديل")
         self.delete_btn = QPushButton("حذف")
         self.refresh_btn = QPushButton("تحديث")
+        self.mark_paid_btn = QPushButton("وضع علامة كمدفوع")
         
         # تنسيق الأزرار
-        buttons = [self.add_btn, self.edit_btn, self.delete_btn, self.refresh_btn]
+        buttons = [self.add_btn, self.edit_btn, self.delete_btn, self.refresh_btn, self.mark_paid_btn]
         for btn in buttons:
             btn.setMinimumHeight(35)
             btn.setStyleSheet("""
@@ -156,10 +157,12 @@ class InternetView(QMainWindow):
         # تلوين أزرار خاصة
         self.edit_btn.setStyleSheet(self.edit_btn.styleSheet().replace("#6c5ce7", "#28a745").replace("#5a4fcf", "#218838"))
         self.delete_btn.setStyleSheet(self.delete_btn.styleSheet().replace("#6c5ce7", "#dc3545").replace("#5a4fcf", "#c82333"))
+        self.mark_paid_btn.setStyleSheet(self.mark_paid_btn.styleSheet().replace("#6c5ce7", "#17a2b8").replace("#5a4fcf", "#138496"))
         
         # تعطيل الأزرار في البداية
         self.edit_btn.setEnabled(False)
         self.delete_btn.setEnabled(False)
+        self.mark_paid_btn.setEnabled(False)
         
         # ترتيب العناصر
         toolbar_layout.addWidget(search_label)
@@ -171,6 +174,7 @@ class InternetView(QMainWindow):
         toolbar_layout.addWidget(self.add_btn)
         toolbar_layout.addWidget(self.edit_btn)
         toolbar_layout.addWidget(self.delete_btn)
+        toolbar_layout.addWidget(self.mark_paid_btn)
         toolbar_layout.addWidget(self.refresh_btn)
         
         layout.addWidget(toolbar_frame)
@@ -198,7 +202,7 @@ class InternetView(QMainWindow):
         # الجدول
         self.table = QTableWidget()
         headers = ["المعرف", "اسم الزبون", "اسم الباقة", "التكلفة الشهرية", 
-                  "تاريخ البداية", "تاريخ النهاية", "الحالة", "الأيام المتبقية", "آخر تحديث"]
+                  "تاريخ البداية", "تاريخ النهاية", "الحالة", "حالة الدفع", "الأيام المتبقية", "آخر تحديث"]
         TableHelper.setup_table_headers(self.table, headers)
         
         # تنسيق الجدول
@@ -245,10 +249,13 @@ class InternetView(QMainWindow):
         self.total_subscriptions_label = QLabel("إجمالي الاشتراكات: -")
         self.active_subscriptions_label = QLabel("نشط: -")
         self.expired_subscriptions_label = QLabel("منتهي: -")
+        self.paid_subscriptions_label = QLabel("مدفوع: -")
+        self.unpaid_subscriptions_label = QLabel("غير مدفوع: -")
         self.total_revenue_label = QLabel("إجمالي الإيرادات: -")
         
         for label in [self.total_subscriptions_label, self.active_subscriptions_label, 
-                     self.expired_subscriptions_label, self.total_revenue_label]:
+                     self.expired_subscriptions_label, self.paid_subscriptions_label, 
+                     self.unpaid_subscriptions_label, self.total_revenue_label]:
             label.setStyleSheet("""
                 QLabel {
                     font-weight: bold;
@@ -259,6 +266,8 @@ class InternetView(QMainWindow):
         status_layout.addWidget(self.total_subscriptions_label)
         status_layout.addWidget(self.active_subscriptions_label)
         status_layout.addWidget(self.expired_subscriptions_label)
+        status_layout.addWidget(self.paid_subscriptions_label)
+        status_layout.addWidget(self.unpaid_subscriptions_label)
         status_layout.addWidget(self.total_revenue_label)
         status_layout.addStretch()
         
@@ -273,6 +282,7 @@ class InternetView(QMainWindow):
         self.edit_btn.clicked.connect(self.edit_internet_subscription)
         self.delete_btn.clicked.connect(self.delete_internet_subscription)
         self.refresh_btn.clicked.connect(self.load_internet_subscriptions)
+        self.mark_paid_btn.clicked.connect(self.mark_as_paid)
         
         # أحداث الجدول
         self.table.selectionModel().selectionChanged.connect(self.on_selection_changed)
@@ -353,6 +363,15 @@ class InternetView(QMainWindow):
             status_item.setForeground(Qt.black)
             self.table.setItem(row, 6, status_item)
             
+            # حالة الدفع
+            payment_status_text = "مدفوع" if subscription.payment_status == 'paid' else "غير مدفوع"
+            payment_status_color = Qt.green if subscription.payment_status == 'paid' else Qt.red
+            payment_status_item = QTableWidgetItem(payment_status_text)
+            payment_status_item.setTextAlignment(Qt.AlignCenter)
+            payment_status_item.setBackground(payment_status_color)
+            payment_status_item.setForeground(Qt.black)
+            self.table.setItem(row, 7, payment_status_item)
+
             # الأيام المتبقية
             days_remaining = 0
             if subscription.end_date and isinstance(subscription.end_date, date):
@@ -372,11 +391,11 @@ class InternetView(QMainWindow):
                 days_item.setBackground(Qt.green)
                 days_item.setForeground(Qt.black)
 
-            self.table.setItem(row, 7, days_item)
+            self.table.setItem(row, 8, days_item)
             
             # آخر تحديث
             last_updated = DateHelper.format_date(subscription.updated_at) if subscription.updated_at else "غير متوفر"
-            self.table.setItem(row, 8, QTableWidgetItem(last_updated))
+            self.table.setItem(row, 9, QTableWidgetItem(last_updated))
         
         # ضبط عرض الأعمدة
         header = self.table.horizontalHeader()
@@ -447,6 +466,8 @@ class InternetView(QMainWindow):
             self.total_subscriptions_label.setText(f"إجمالي الاشتراكات: {stats.get('total_subscriptions_count', 0)}")
             self.active_subscriptions_label.setText(f"نشط: {stats.get('active_subscriptions_count', 0)}")
             self.expired_subscriptions_label.setText(f"منتهي: {stats.get('expired_subscriptions_count', 0)}")
+            self.paid_subscriptions_label.setText(f"مدفوع: {stats.get('paid_count', 0)}")
+            self.unpaid_subscriptions_label.setText(f"غير مدفوع: {stats.get('unpaid_count', 0)}")
             self.total_revenue_label.setText(f"إجمالي الإيرادات: {NumberHelper.format_currency(stats.get('total_monthly_revenue', 0))}")
             
         except Exception as e:
@@ -467,10 +488,39 @@ class InternetView(QMainWindow):
             id_item = self.table.item(current_row, 0)
             if id_item:
                 self.selected_subscription = id_item.data(Qt.UserRole)
+                # تفعيل زر الدفع فقط إذا كان الاشتراك غير مدفوع
+                self.mark_paid_btn.setEnabled(self.selected_subscription.payment_status == 'unpaid')
             else:
                 self.selected_subscription = None
+                self.mark_paid_btn.setEnabled(False)
         else:
             self.selected_subscription = None
+            self.mark_paid_btn.setEnabled(False)
+    
+    def mark_as_paid(self):
+        """
+        وضع علامة على الاشتراك كمدفوع
+        """
+        if not self.selected_subscription:
+            return
+        
+        reply = MessageHelper.show_question(
+            self, "تأكيد الدفع",
+            f"هل أنت متأكد من أن هذا الاشتراك قد تم دفعه؟\n"
+            f"الباقة: {self.selected_subscription.plan_name}\n"
+            f"الزبون: {self.selected_subscription.person_name}"
+        )
+        
+        if reply:
+            success, message = self.internet_controller.update_subscription_payment_status(
+                self.selected_subscription.id, 'paid'
+            )
+            
+            if success:
+                MessageHelper.show_info(self, "نجح", message)
+                self.load_internet_subscriptions()
+            else:
+                MessageHelper.show_error(self, "خطأ", message)
     
     def add_internet_subscription(self):
         """
@@ -495,7 +545,8 @@ class InternetView(QMainWindow):
                 internet_data['plan_name'],
                 internet_data['monthly_fee'],
                 internet_data['start_date'],
-                internet_data['end_date']
+                internet_data['end_date'],
+                internet_data['payment_status']
             )
             
             if success:
@@ -521,7 +572,92 @@ class InternetView(QMainWindow):
                 internet_data['plan_name'],
                 internet_data['monthly_fee'],
                 internet_data['start_date'],
-                internet_data['end_date']
+                internet_data['end_date'],
+                internet_data['payment_status']
+            )
+            
+            if success:
+                MessageHelper.show_info(self, "نجح", message)
+                self.load_internet_subscriptions()
+            else:
+                MessageHelper.show_error(self, "خطأ", message)
+    
+    def delete_internet_subscription(self):
+        """
+        حذف اشتراك إنترنت
+        """
+        if not self.selected_subscription:
+            return
+        
+        reply = MessageHelper.show_question(
+            self, "تأكيد الحذف",
+            f"هل أنت متأكد من حذف هذا الاشتراك؟\n"
+            f"الباقة: {self.selected_subscription.plan_name}\n"
+            f"الزبون: {self.selected_subscription.person_name}\n"
+            f"التكلفة: {NumberHelper.format_currency(self.selected_subscription.monthly_fee)}"
+        )
+        
+        if reply:
+            success, message = self.internet_controller.delete_subscription(self.selected_subscription.id)
+            
+            if success:
+                MessageHelper.show_info(self, "نجح", message)
+                self.load_internet_subscriptions()
+            else:
+                MessageHelper.show_error(self, "خطأ", message)
+    
+    def add_internet_subscription(self):
+        """
+        إضافة اشتراك إنترنت جديد
+        """
+        persons = self.person_controller.get_all_persons()
+        if not persons:
+            MessageHelper.show_warning(self, "تنبيه", "يجب إضافة زبائن أولاً قبل إضافة اشتراكات الإنترنت")
+            return
+        
+        dialog = AddInternetDialog(self)
+        if dialog.exec_() == dialog.Accepted:
+            internet_data = dialog.get_subscription_data()
+            
+            person_id = internet_data.get('person_id')
+            if not person_id:
+                MessageHelper.show_error(self, "خطأ", "لم يتم اختيار زبون.")
+                return
+
+            success, message, internet_id = self.internet_controller.add_subscription(
+                person_id,
+                internet_data['plan_name'],
+                internet_data['monthly_fee'],
+                internet_data['start_date'],
+                internet_data['end_date'],
+                internet_data['payment_status']
+            )
+            
+            if success:
+                MessageHelper.show_info(self, "نجح", message)
+                self.load_internet_subscriptions()
+            else:
+                MessageHelper.show_error(self, "خطأ", message)
+    
+    def edit_internet_subscription(self):
+        """
+        تعديل اشتراك إنترنت
+        """
+        if not self.selected_subscription:
+            return
+        
+        dialog = AddInternetDialog(self, self.selected_subscription)
+        if dialog.exec_() == dialog.Accepted:
+            internet_data = dialog.get_subscription_data()
+            
+            # is_active is now determined by dates, so it's not passed
+            success, message = self.internet_controller.update_subscription(
+                self.selected_subscription.id,
+                internet_data['plan_name'],
+                internet_data['monthly_fee'],
+                internet_data['start_date'],
+                internet_data['end_date'],
+                internet_data['payment_status']
             )
             
             if success:

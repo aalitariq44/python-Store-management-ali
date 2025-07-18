@@ -107,6 +107,7 @@ class DatabaseConnection:
                 start_date DATE,
                 end_date DATE,
                 is_active BOOLEAN DEFAULT TRUE,
+                payment_status TEXT DEFAULT 'unpaid',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (person_id) REFERENCES persons (id) ON DELETE CASCADE
@@ -157,6 +158,19 @@ class DatabaseConnection:
                 print("Migration successful: 'updated_at' column added to 'internet_subscriptions'.")
         except sqlite3.Error as e:
             print(f"Migration check failed for 'internet_subscriptions': {e}")
+            conn.rollback()
+
+        # التحقق من وجود عمود 'payment_status' في جدول 'internet_subscriptions'
+        try:
+            cursor.execute("PRAGMA table_info(internet_subscriptions)")
+            columns = [row['name'] for row in cursor.fetchall()]
+            
+            if 'payment_status' not in columns:
+                cursor.execute("ALTER TABLE internet_subscriptions ADD COLUMN payment_status TEXT DEFAULT 'unpaid'")
+                conn.commit()
+                print("Migration successful: 'payment_status' column added to 'internet_subscriptions'.")
+        except sqlite3.Error as e:
+            print(f"Migration check failed for 'internet_subscriptions' (payment_status): {e}")
             conn.rollback()
 
         # التحقق من وجود عمود 'notes' في جدول 'persons'

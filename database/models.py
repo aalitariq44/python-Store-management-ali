@@ -94,6 +94,7 @@ class InternetSubscription:
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     is_active: bool = True
+    payment_status: str = "unpaid"  # 'paid' or 'unpaid'
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     person_name: str = ""  # للعرض في القوائم العامة

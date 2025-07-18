@@ -22,7 +22,8 @@ class InternetController:
     
     def add_subscription(self, person_id: int, plan_name: str, monthly_fee: float,
                         start_date: Optional[date] = None,
-                        end_date: Optional[date] = None) -> tuple[bool, str, Optional[int]]:
+                        end_date: Optional[date] = None,
+                        payment_status: str = 'unpaid') -> tuple[bool, str, Optional[int]]:
         """
         إضافة اشتراك جديد
         
@@ -32,6 +33,7 @@ class InternetController:
             monthly_fee: الرسوم الشهرية
             start_date: تاريخ البداية
             end_date: تاريخ النهاية
+            payment_status: حالة الدفع
             
         Returns:
             tuple: (نجح, رسالة, معرف الاشتراك الجديد)
@@ -58,7 +60,8 @@ class InternetController:
             monthly_fee=monthly_fee,
             start_date=start_date,
             end_date=end_date,
-            is_active=is_active
+            is_active=is_active,
+            payment_status=payment_status
         )
         
         subscription_id = self.queries.create_subscription(subscription)
@@ -69,7 +72,8 @@ class InternetController:
             return False, "حدث خطأ أثناء إضافة الاشتراك", None
     
     def update_subscription(self, subscription_id: int, plan_name: str, monthly_fee: float,
-                           start_date: Optional[date], end_date: Optional[date]) -> tuple[bool, str]:
+                           start_date: Optional[date], end_date: Optional[date],
+                           payment_status: str) -> tuple[bool, str]:
         """
         تحديث اشتراك
         
@@ -79,6 +83,7 @@ class InternetController:
             monthly_fee: الرسوم الشهرية الجديدة
             start_date: تاريخ البداية الجديد
             end_date: تاريخ النهاية الجديد
+            payment_status: حالة الدفع الجديدة
             
         Returns:
             tuple: (نجح, رسالة)
@@ -112,13 +117,33 @@ class InternetController:
             monthly_fee=monthly_fee,
             start_date=start_date,
             end_date=end_date,
-            is_active=is_active
+            is_active=is_active,
+            payment_status=payment_status
         )
         
         if self.queries.update_subscription(updated_subscription):
             return True, "تم تحديث الاشتراك بنجاح"
         else:
             return False, "حدث خطأ أثناء تحديث الاشتراك"
+
+    def update_subscription_payment_status(self, subscription_id: int, payment_status: str) -> tuple[bool, str]:
+        """
+        تحديث حالة الدفع لاشتراك
+        
+        Args:
+            subscription_id: معرف الاشتراك
+            payment_status: حالة الدفع الجديدة ('paid' or 'unpaid')
+            
+        Returns:
+            tuple: (نجح, رسالة)
+        """
+        if payment_status not in ['paid', 'unpaid']:
+            return False, "حالة الدفع غير صالحة"
+            
+        if self.queries.update_subscription_payment_status(subscription_id, payment_status):
+            return True, "تم تحديث حالة الدفع بنجاح"
+        else:
+            return False, "حدث خطأ أثناء تحديث حالة الدفع"
 
     def delete_subscription(self, subscription_id: int) -> tuple[bool, str]:
         """
@@ -250,11 +275,16 @@ class InternetController:
                     active_subscriptions.append(sub)
                 elif sub.end_date < today:
                     expired_subscriptions.append(sub)
+        
+        paid_count = sum(1 for sub in all_subscriptions if sub.payment_status == 'paid')
+        unpaid_count = len(all_subscriptions) - paid_count
 
         return {
             'total_subscriptions_count': len(all_subscriptions),
             'active_subscriptions_count': len(active_subscriptions),
             'expired_subscriptions_count': len(expired_subscriptions),
+            'paid_count': paid_count,
+            'unpaid_count': unpaid_count,
             'total_monthly_revenue': sum(sub.monthly_fee for sub in active_subscriptions),
             'average_monthly_fee': sum(sub.monthly_fee for sub in all_subscriptions) / len(all_subscriptions) if all_subscriptions else 0
         }
