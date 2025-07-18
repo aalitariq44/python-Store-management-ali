@@ -10,6 +10,9 @@ from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QPixmap, QIcon
 from utils.helpers import AppHelper, MessageHelper
+import requests
+from controllers.backup_controller import BackupController
+from views.dialogs.backups_dialog import BackupsDialog
 
 
 class MainWindow(QMainWindow):
@@ -100,6 +103,17 @@ class MainWindow(QMainWindow):
         password_settings_action.triggered.connect(self.open_password_settings)
         settings_menu.addAction(password_settings_action)
         
+        # قائمة النسخ الاحتياطي
+        backup_menu = menubar.addMenu('النسخ الاحتياطي')
+
+        create_backup_action = QAction('إنشاء نسخة احتياطية', self)
+        create_backup_action.triggered.connect(self.create_backup)
+        backup_menu.addAction(create_backup_action)
+
+        view_backups_action = QAction('عرض النسخ الاحتياطية', self)
+        view_backups_action.triggered.connect(self.view_backups)
+        backup_menu.addAction(view_backups_action)
+
         # قائمة المساعدة
         help_menu = menubar.addMenu('مساعدة')
         
@@ -391,6 +405,24 @@ class MainWindow(QMainWindow):
             event.accept()
         else:
             event.ignore()
+
+    def create_backup(self):
+        """
+        إنشاء نسخة احتياطية من قاعدة البيانات
+        """
+        controller = BackupController()
+        success, message = controller.backup_database()
+        if success:
+            MessageHelper.show_info(self, "نجاح", message)
+        else:
+            MessageHelper.show_error(self, "خطأ", message)
+
+    def view_backups(self):
+        """
+        عرض النسخ الاحتياطية المتاحة
+        """
+        dialog = BackupsDialog(self)
+        dialog.exec_()
 
 
 def main():
