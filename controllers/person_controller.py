@@ -39,9 +39,6 @@ class PersonController:
         if not is_valid:
             return False, error_message, None
         
-        # التحقق من عدم تكرار رقم الهاتف
-        if self.is_phone_exists(phone):
-            return False, "رقم الهاتف مُستخدم مسبقاً", None
         
         # إنشاء الزبون
         person = Person(name=name.strip(), phone=phone.strip(), address=address.strip(), notes=notes.strip())
