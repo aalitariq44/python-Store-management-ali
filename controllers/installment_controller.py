@@ -4,7 +4,7 @@
 يحتوي على العمليات والقواعد الخاصة بالأقساط
 """
 
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from datetime import date
 from database.database_connection import DatabaseConnection
 from database.queries import InstallmentQueries, PaymentQueries
@@ -22,7 +22,7 @@ class InstallmentController:
         self.payment_queries = PaymentQueries(self.db)
     
     def add_installment(self, person_id: int, total_amount: float,
-                       description: str, start_date: Optional[date] = None) -> tuple[bool, str, Optional[int]]:
+                       description: str, start_date: Optional[date] = None) -> Tuple[bool, str, Optional[int]]:
         """
         إضافة قسط جديد
         
@@ -59,7 +59,7 @@ class InstallmentController:
             return False, "حدث خطأ أثناء إضافة القسط", None
     
     def update_installment(self, installment_id: int, total_amount: float,
-                          description: str, start_date: Optional[date]) -> tuple[bool, str]:
+                          description: str, start_date: Optional[date]) -> Tuple[bool, str]:
         """
         تحديث قسط
         
@@ -101,7 +101,7 @@ class InstallmentController:
         else:
             return False, "حدث خطأ أثناء تحديث القسط"
     
-    def add_payment(self, installment_id: int, payment_amount: float, payment_date: Optional[date] = None) -> tuple[bool, str]:
+    def add_payment(self, installment_id: int, payment_amount: float, payment_date: Optional[date] = None) -> Tuple[bool, str]:
         """
         إضافة دفعة للقسط
         
@@ -137,7 +137,7 @@ class InstallmentController:
         else:
             return False, "فشل تسجيل الدفعة"
     
-    def delete_installment(self, installment_id: int) -> tuple[bool, str]:
+    def delete_installment(self, installment_id: int) -> Tuple[bool, str]:
         """
         حذف قسط وجميع الدفعات المرتبطة به
         

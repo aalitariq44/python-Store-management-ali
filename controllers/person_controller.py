@@ -4,7 +4,7 @@
 يحتوي على العمليات والقواعد الخاصة بالزبائن
 """
 
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from database.database_connection import DatabaseConnection
 from database.queries import PersonQueries
 from database.models import Person
@@ -19,7 +19,7 @@ class PersonController:
         self.db = DatabaseConnection()
         self.queries = PersonQueries(self.db)
     
-    def add_person(self, name: str, phone: str, address: str, notes: str) -> tuple[bool, str, Optional[int]]:
+    def add_person(self, name: str, phone: str, address: str, notes: str) -> Tuple[bool, str, Optional[int]]:
         """
         إضافة زبون جديد
         
@@ -49,7 +49,7 @@ class PersonController:
         else:
             return False, "حدث خطأ أثناء إضافة الزبون", None
     
-    def update_person(self, person_id: int, name: str, phone: str, address: str, notes: str) -> tuple[bool, str]:
+    def update_person(self, person_id: int, name: str, phone: str, address: str, notes: str) -> Tuple[bool, str]:
         """
         تحديث بيانات زبون
         
@@ -93,7 +93,7 @@ class PersonController:
         else:
             return False, "حدث خطأ أثناء تحديث البيانات"
     
-    def delete_person(self, person_id: int) -> tuple[bool, str]:
+    def delete_person(self, person_id: int) -> Tuple[bool, str]:
         """
         حذف زبون
         

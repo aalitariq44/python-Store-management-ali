@@ -6,7 +6,7 @@
 
 import sys
 from datetime import datetime, date
-from typing import Optional
+from typing import Optional, Dict
 from PyQt5.QtWidgets import QMessageBox, QWidget
 from PyQt5.QtCore import QDate
 
@@ -257,7 +257,7 @@ class TableHelper:
         table_widget.setRowCount(0)
     
     @staticmethod
-    def get_selected_row_data(table_widget) -> Optional[dict]:
+    def get_selected_row_data(table_widget) -> Optional[Dict]:
         """
         الحصول على بيانات الصف المحدد
         

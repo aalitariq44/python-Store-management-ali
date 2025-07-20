@@ -3,6 +3,7 @@
 نافذة حوار إضافة/تعديل اشتراك إنترنت
 """
 
+from typing import Tuple
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QFormLayout,
                              QLineEdit, QTextEdit, QPushButton, QLabel, QFrame,
                              QDateEdit, QDoubleSpinBox, QComboBox)
@@ -204,7 +205,7 @@ class AddInternetDialog(QDialog):
             'payment_status': self.payment_status_combo.currentData()
         }
     
-    def validate_data(self) -> tuple[bool, str]:
+    def validate_data(self) -> Tuple[bool, str]:
         """
         التحقق من صحة البيانات
         """

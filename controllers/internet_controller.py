@@ -4,7 +4,7 @@
 يحتوي على العمليات والقواعد الخاصة باشتراكات الإنترنت
 """
 
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from datetime import date
 from database.database_connection import DatabaseConnection
 from database.queries import InternetSubscriptionQueries
@@ -23,7 +23,7 @@ class InternetController:
     def add_subscription(self, person_id: int, plan_name: str, monthly_fee: float,
                         start_date: Optional[date] = None,
                         end_date: Optional[date] = None,
-                        payment_status: str = 'unpaid') -> tuple[bool, str, Optional[int]]:
+                        payment_status: str = 'unpaid') -> Tuple[bool, str, Optional[int]]:
         """
         إضافة اشتراك جديد
         
@@ -73,7 +73,7 @@ class InternetController:
     
     def update_subscription(self, subscription_id: int, plan_name: str, monthly_fee: float,
                            start_date: Optional[date], end_date: Optional[date],
-                           payment_status: str) -> tuple[bool, str]:
+                           payment_status: str) -> Tuple[bool, str]:
         """
         تحديث اشتراك
         
@@ -126,7 +126,7 @@ class InternetController:
         else:
             return False, "حدث خطأ أثناء تحديث الاشتراك"
 
-    def update_subscription_payment_status(self, subscription_id: int, payment_status: str) -> tuple[bool, str]:
+    def update_subscription_payment_status(self, subscription_id: int, payment_status: str) -> Tuple[bool, str]:
         """
         تحديث حالة الدفع لاشتراك
         
@@ -145,7 +145,7 @@ class InternetController:
         else:
             return False, "حدث خطأ أثناء تحديث حالة الدفع"
 
-    def delete_subscription(self, subscription_id: int) -> tuple[bool, str]:
+    def delete_subscription(self, subscription_id: int) -> Tuple[bool, str]:
         """
         حذف اشتراك
         

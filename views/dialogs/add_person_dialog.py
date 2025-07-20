@@ -3,6 +3,7 @@
 نافذة حوار إضافة/تعديل زبون
 """
 
+from typing import Tuple
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QFormLayout,
                              QLineEdit, QTextEdit, QPushButton, QLabel, QFrame)
 from PyQt5.QtCore import Qt
@@ -177,7 +178,7 @@ class AddPersonDialog(QDialog):
             'notes': self.notes_input.toPlainText().strip()
         }
     
-    def validate_data(self) -> tuple[bool, str]:
+    def validate_data(self) -> Tuple[bool, str]:
         """
         التحقق من صحة البيانات
         

@@ -4,7 +4,7 @@
 يحتوي على العمليات والقواعد الخاصة بالديون
 """
 
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from datetime import date
 from database.database_connection import DatabaseConnection
 from database.queries import DebtQueries
@@ -21,7 +21,7 @@ class DebtController:
         self.queries = DebtQueries(self.db)
     
     def add_debt(self, person_id: int, amount: float, description: str, 
-                 due_date: Optional[date] = None) -> tuple[bool, str, Optional[int]]:
+                 due_date: Optional[date] = None) -> Tuple[bool, str, Optional[int]]:
         """
         إضافة دين جديد
         
@@ -60,7 +60,7 @@ class DebtController:
             return False, "حدث خطأ أثناء إضافة الدين", None
     
     def update_debt(self, debt_id: int, amount: float, description: str, 
-                    due_date: Optional[date], is_paid: bool) -> tuple[bool, str]:
+                    due_date: Optional[date], is_paid: bool) -> Tuple[bool, str]:
         """
         تحديث دين
         
@@ -103,7 +103,7 @@ class DebtController:
         else:
             return False, "حدث خطأ أثناء تحديث الدين"
     
-    def delete_debt(self, debt_id: int) -> tuple[bool, str]:
+    def delete_debt(self, debt_id: int) -> Tuple[bool, str]:
         """
         حذف دين
         
@@ -123,7 +123,7 @@ class DebtController:
         else:
             return False, "حدث خطأ أثناء حذف الدين"
     
-    def mark_debt_as_paid(self, debt_id: int) -> tuple[bool, str]:
+    def mark_debt_as_paid(self, debt_id: int) -> Tuple[bool, str]:
         """
         وضع علامة مدفوع على الدين
         

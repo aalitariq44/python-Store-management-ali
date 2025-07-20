@@ -3,6 +3,7 @@
 نافذة حوار إضافة/تعديل قسط
 """
 
+from typing import Tuple
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QFormLayout,
                              QLineEdit, QTextEdit, QPushButton, QLabel, QFrame,
                              QDateEdit, QCheckBox, QDoubleSpinBox, QComboBox)
@@ -192,7 +193,7 @@ class AddInstallmentDialog(QDialog):
             'start_date': start_date,
         }
     
-    def validate_data(self) -> tuple[bool, str]:
+    def validate_data(self) -> Tuple[bool, str]:
         """
         التحقق من صحة البيانات
         """

@@ -4,7 +4,7 @@
 يحتوي على جميع الاستعلامات المطلوبة للتطبيق
 """
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime, date
 from .database_connection import DatabaseConnection
 from .models import Person, Debt, Installment, InternetSubscription, Payment
@@ -531,7 +531,7 @@ class PaymentQueries:
         result = self.db.execute_query(query, (payment_id,))
         return result is not None
 
-    def delete_payments_by_installment_id(self, installment_id: int) -> tuple[bool, str]:
+    def delete_payments_by_installment_id(self, installment_id: int) -> Tuple[bool, str]:
         """
         حذف جميع الدفعات المرتبطة بقسط معين
         """
