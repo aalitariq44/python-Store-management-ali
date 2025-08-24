@@ -156,3 +156,11 @@ logs/
 backups/
 temp/
 cache/
+
+
+# Build directories - should not be committed
+dist-win-ali/
+dist/
+build/
+*.exe
+*.msi
