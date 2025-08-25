@@ -493,6 +493,6 @@ class PersonsView(QMainWindow):
             # تخزين النافذة كعضو في الكلاس لمنعها من الحذف
             self.details_window = PersonDetailsView(self.selected_person)
             self.details_window.person_updated.connect(self.load_persons)  # تحديث البيانات عند التعديل
-            self.details_window.show()
+            self.details_window.showMaximized()
         except Exception as e:
             MessageHelper.show_error(self, "خطأ", f"حدث خطأ في فتح نافذة التفاصيل: {str(e)}")
