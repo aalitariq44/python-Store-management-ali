@@ -119,6 +119,8 @@ class LoginDialog(QDialog):
         self.password_input.setEchoMode(QLineEdit.Password)
         self.password_input.setPlaceholderText("أدخل كلمة المرور هنا")
         self.password_input.returnPressed.connect(self.login)
+        # Default development password for ease of testing
+        self.password_input.setText("123456")
         
         form_layout = QVBoxLayout()
         form_layout.setSpacing(5)
