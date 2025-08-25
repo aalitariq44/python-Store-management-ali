@@ -76,7 +76,8 @@ def main():
         # إضافة قائمة إعدادات كلمة المرور إلى النافذة الرئيسية
         main_window.set_auth_controller(auth_controller)
         
-        main_window.show()
+        # عرض النافذة في الوضع المعظم
+        main_window.showMaximized()
         
         # تشغيل التطبيق
         sys.exit(app.exec_())
