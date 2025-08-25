@@ -320,7 +320,7 @@ class MainWindow(QMainWindow):
         try:
             from views.persons_view import PersonsView
             self.persons_window = PersonsView()
-            self.persons_window.show()
+            self.persons_window.showMaximized()
         except Exception as e:
             MessageHelper.show_error(self, "خطأ", f"حدث خطأ في فتح واجهة الزبائن: {str(e)}")
     
@@ -331,7 +331,7 @@ class MainWindow(QMainWindow):
         try:
             from views.debts_view import DebtsView
             self.debts_window = DebtsView()
-            self.debts_window.show()
+            self.debts_window.showMaximized()
         except Exception as e:
             MessageHelper.show_error(self, "خطأ", f"حدث خطأ في فتح واجهة الديون: {str(e)}")
     
@@ -342,7 +342,7 @@ class MainWindow(QMainWindow):
         try:
             from views.installments_view import InstallmentsView
             self.installments_window = InstallmentsView()
-            self.installments_window.show()
+            self.installments_window.showMaximized()
         except Exception as e:
             MessageHelper.show_error(self, "خطأ", f"حدث خطأ في فتح واجهة الأقساط: {str(e)}")
     
@@ -353,7 +353,7 @@ class MainWindow(QMainWindow):
         try:
             from views.internet_view import InternetView
             self.internet_window = InternetView()
-            self.internet_window.show()
+            self.internet_window.showMaximized()
         except Exception as e:
             MessageHelper.show_error(self, "خطأ", f"حدث خطأ في فتح واجهة الإنترنت: {str(e)}")
     
