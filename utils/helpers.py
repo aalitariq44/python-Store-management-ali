@@ -67,7 +67,7 @@ class MessageHelper:
     @staticmethod
     def show_question(parent: QWidget, title: str, message: str) -> bool:
         """
-        عرض رسالة سؤال
+        عرض رسالة سؤال مع تخصيص لون الأزرار
         
         Args:
             parent: النافذة الأب
@@ -77,11 +77,23 @@ class MessageHelper:
         Returns:
             True إذا ضغط المستخدم Yes
         """
-        reply = QMessageBox.question(
-            parent, title, message,
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
-        )
+        # Create message box instance to customize button styles
+        msg_box = QMessageBox(parent)
+        msg_box.setIcon(QMessageBox.Question)
+        msg_box.setWindowTitle(title)
+        msg_box.setText(message)
+        # Add Yes and No buttons
+        msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        # Retrieve buttons to apply custom styles
+        yes_btn = msg_box.button(QMessageBox.Yes)
+        no_btn = msg_box.button(QMessageBox.No)
+        btn_style = "background-color: black; color: white;"
+        yes_btn.setStyleSheet(btn_style)
+        no_btn.setStyleSheet(btn_style)
+        # Set default focus to No button
+        msg_box.setDefaultButton(QMessageBox.No)
+        # Execute dialog and interpret response
+        reply = msg_box.exec_()
         return reply == QMessageBox.Yes
 
 
