@@ -81,6 +81,7 @@ class PersonsView(QMainWindow):
         self.edit_btn.setObjectName("editButton")
         self.delete_btn.setObjectName("deleteButton")
         self.refresh_btn.setObjectName("refreshButton")
+        self.details_btn.setObjectName("detailsButton")  # مضاف لتغيير اللون
         
         # تعطيل الأزرار التي تتطلب تحديدًا
         self.edit_btn.setEnabled(False)
@@ -254,6 +255,8 @@ class PersonsView(QMainWindow):
             QPushButton#deleteButton:hover { background-color: #b32f00; }
             QPushButton#refreshButton { background-color: #5c5c5c; }
             QPushButton#refreshButton:hover { background-color: #454545; }
+            QPushButton#detailsButton { background-color: #6a00d7; } /* لون جديد لزر عرض التفاصيل */
+            QPushButton#detailsButton:hover { background-color: #5200a8; }
             QTableWidget {
                 background-color: white;
                 border: 1px solid #dcdcdc;
