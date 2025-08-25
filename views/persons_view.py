@@ -63,13 +63,15 @@ class PersonsView(QMainWindow):
         """
         toolbar_frame = QFrame()
         toolbar_layout = QHBoxLayout(toolbar_frame)
-        
+
         # شريط البحث
         search_label = QLabel("البحث:")
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("ابحث بالاسم أو رقم الهاتف أو العنوان...")
         self.search_input.setMaximumWidth(300)
-        
+        # ضبط حجم الخط لحقل البحث
+        self.search_input.setStyleSheet("font-size: 18px;")
+
         # الأزرار
         self.add_btn = QPushButton("إضافة زبون")
         self.edit_btn = QPushButton("تعديل")
@@ -155,7 +157,7 @@ class PersonsView(QMainWindow):
         table_title = QLabel("قائمة الزبائن")
         table_title.setStyleSheet("""
             QLabel {
-                font-size: 24px;
+                font-size: 18px;
                 font-weight: bold;
                 color: #495057;
                 margin-bottom: 10px;
@@ -176,6 +178,7 @@ class PersonsView(QMainWindow):
                 gridline-color: #dee2e6;
                 background-color: white;
                 alternate-background-color: #f8f9fa;
+                font-size: 18px;
             }
             QTableWidget::item {
                 padding: 8px;
@@ -212,7 +215,7 @@ class PersonsView(QMainWindow):
         info_title = QLabel("معلومات الزبون")
         info_title.setStyleSheet("""
             QLabel {
-                font-size: 24px;
+                font-size: 14px;
                 font-weight: bold;
                 color: #495057;
                 margin-bottom: 15px;
@@ -233,7 +236,7 @@ class PersonsView(QMainWindow):
                 border: 1px solid #ced4da;
                 border-radius: 5px;
                 padding: 10px;
-                font-size: 24px;
+                font-size: 18px;
             }
         """)
         info_layout.addWidget(self.info_display)
@@ -242,7 +245,7 @@ class PersonsView(QMainWindow):
         stats_label = QLabel("الإحصائيات:")
         stats_label.setStyleSheet("""
             QLabel {
-                font-size: 24px;
+                font-size: 18px;
                 font-weight: bold;
                 color: #495057;
                 margin-top: 15px;
@@ -259,7 +262,7 @@ class PersonsView(QMainWindow):
                 border: 1px solid #ced4da;
                 border-radius: 5px;
                 padding: 10px;
-                font-size: 24px;
+                font-size: 18px;
             }
         """)
         info_layout.addWidget(self.stats_display)
