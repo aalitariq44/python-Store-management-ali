@@ -11,7 +11,7 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 from controllers.person_controller import PersonController
 from database.models import Person
-from utils.helpers import MessageHelper, AppHelper, TableHelper
+from utils.helpers import MessageHelper, AppHelper, TableHelper, NumberHelper
 from views.dialogs.add_person_dialog import AddPersonDialog
 
 
@@ -376,14 +376,14 @@ class PersonsView(QMainWindow):
             stats = self.controller.get_person_statistics(self.selected_person.id)
             stats_text = f"""
             <b>عدد الديون:</b> {stats['debts_count']}<br>
-            <b>إجمالي الديون:</b> {stats['total_debts']:.2f}<br>
-            <b>الديون المدفوعة:</b> {stats['paid_debts']:.2f}<br>
+            <b>إجمالي الديون:</b> {NumberHelper.format_currency(stats['total_debts'])}<br>
+            <b>الديون المدفوعة:</b> {NumberHelper.format_currency(stats['paid_debts'])}<br>
             <b>عدد الأقساط:</b> {stats['installments_count']}<br>
-            <b>إجمالي الأقساط:</b> {stats['total_installments_amount']:.2f}<br>
-            <b>المدفوع من الأقساط:</b> {stats['paid_installments_amount']:.2f}<br>
+            <b>إجمالي الأقساط:</b> {NumberHelper.format_currency(stats['total_installments_amount'])}<br>
+            <b>المدفوع من الأقساط:</b> {NumberHelper.format_currency(stats['paid_installments_amount'])}<br>
             <b>عدد الاشتراكات:</b> {stats['subscriptions_count']}<br>
             <b>الاشتراكات النشطة:</b> {stats['active_subscriptions_count']}<br>
-            <b>رسوم الإنترنت الشهرية:</b> {stats['monthly_internet_fees']:.2f}
+            <b>رسوم الإنترنت الشهرية:</b> {NumberHelper.format_currency(stats['monthly_internet_fees'])}
             """
             self.stats_display.setHtml(stats_text)
         except Exception as e:
